@@ -169,6 +169,10 @@ function admin(&$out) {
       $tmp['RENDER_UPDATED']=date('Y-m-d H:i:s');
       SQLUpdate('commands', $tmp);
      }
+     if (preg_match('/#[\w\d]{6}/is', $data, $m)) {
+      $color=$m[0];
+      $data=trim(str_replace($m[0], '<style>#item'.$item['ID'].' .ui-btn-active {background-color:'.$color.';border-color:'.$color.'}</style>', $data));
+     }
      $res['LABELS'][]=array('ID'=>$item['ID'], 'DATA'=>$data);
     }
    }
@@ -301,6 +305,16 @@ function admin(&$out) {
    $this->search_commands($out);
    endMeasure('searchCommands', 1);
   }
+
+  if ($this->view_mode=='moveup' && $this->id) {
+   $this->reorder_items($this->id, 'up');
+   $this->redirect("?");
+  }
+  if ($this->view_mode=='movedown' && $this->id) {
+   $this->reorder_items($this->id, 'down');
+   $this->redirect("?");
+  }
+
   if ($this->view_mode=='edit_commands') {
    $this->edit_commands($out, $this->id);
   }
@@ -319,6 +333,38 @@ function admin(&$out) {
   }
  }
 }
+
+ function reorder_items($id, $direction='up') {
+  $element=SQLSelectOne("SELECT * FROM commands WHERE ID='".(int)$id."'");
+  if ($element['PARENT_ID']) {
+   $all_elements=SQLSelect("SELECT * FROM commands WHERE PARENT_ID=".$element['PARENT_ID']." ORDER BY PRIORITY DESC, TITLE");
+  } else {
+   $all_elements=SQLSelect("SELECT * FROM commands WHERE PARENT_ID=0 ORDER BY PRIORITY DESC, TITLE");
+  }
+  $total=count($all_elements);
+  for($i=0;$i<$total;$i++) {
+   if ($all_elements[$i]['ID']==$id && $i>0 && $direction=='up') {
+    $tmp=$all_elements[$i-1];
+    $all_elements[$i-1]=$all_elements[$i];
+    $all_elements[$i]=$tmp;
+    break;
+   }
+   if ($all_elements[$i]['ID']==$id && $i<($total-1) && $direction=='down') {
+    $tmp=$all_elements[$i+1];
+    $all_elements[$i+1]=$all_elements[$i];
+    $all_elements[$i]=$tmp;
+    break;
+   }
+  }
+  $priority=($total)*10;
+  for($i=0;$i<$total;$i++) {
+   $all_elements[$i]['PRIORITY']=$priority;
+   $priority-=10;
+   SQLUpdate('commands', $all_elements[$i]);
+  }
+ }
+
+
 /**
 * FrontEnd
 *
@@ -557,6 +603,13 @@ function usual(&$out) {
     if ($res[$i]['TYPE']=='custom') {
      $res[$i]['DATA']=processTitle($res[$i]['DATA'], $this);
     }
+
+     if (preg_match('/#[\w\d]{6}/is', $res[$i]['TITLE'], $m)) {
+      $color=$m[0];
+      $res[$i]['TITLE']=trim(str_replace($m[0], '<style>#item'.$res[$i]['ID'].' .ui-btn-active {background-color:'.$color.';border-color:'.$color.'}</style>', $res[$i]['TITLE']));
+     }
+
+
 
     if ($res[$i]['RENDER_TITLE']!=$res[$i]['TITLE'] || $res[$i]['RENDER_DATA']!=$res[$i]['DATA']) {
      $tmp=SQLSelectOne("SELECT * FROM commands WHERE ID='".$res[$i]['ID']."'");
