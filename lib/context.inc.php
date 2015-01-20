@@ -24,21 +24,35 @@
    }
   }
 
+  function context_get_history() {
+   $user_id=context_getuser();
+   $user=SQLSelectOne("SELECT ID, ACTIVE_CONTEXT_ID, ACTIVE_CONTEXT_EXTERNAL, ACTIVE_CONTEXT_HISTORY FROM users WHERE ID='".(int)$user_id."'");    
+   if ($user['ACTIVE_CONTEXT_ID']) {
+    return $user['ACTIVE_CONTEXT_HISTORY'];
+   } else {
+    return '';
+   }
+  }
+
   function context_clear() {
    $user_id=context_getuser();
    $user=SQLSelectOne("SELECT * FROM users WHERE ID='".(int)$user_id."'");
    $user['ACTIVE_CONTEXT_ID']=0;
    $user['ACTIVE_CONTEXT_EXTERNAL']=0;
    $user['ACTIVE_CONTEXT_UPDATED']=date('Y-m-d H:i:s');
+   $user['ACTIVE_CONTEXT_HISTORY']='';
    SQLUpdate('users', $user);
   }
 
-  function context_activate($id) {
+  function context_activate($id, $no_action=0, $history='') {
    $user_id=context_getuser();
    $user=SQLSelectOne("SELECT * FROM users WHERE ID='".(int)$user_id."'");
    $user['ACTIVE_CONTEXT_ID']=$id;
    $user['ACTIVE_CONTEXT_EXTERNAL']=0;
    $user['ACTIVE_CONTEXT_UPDATED']=date('Y-m-d H:i:s');
+   if ($history) {
+    $user['ACTIVE_CONTEXT_HISTORY'].=' '.$history;
+   }
    SQLUpdate('users', $user);
    if ($id) {
     //execute pattern
@@ -48,6 +62,11 @@
      $timeout=60;
     }
     setTimeOut('user_'.$user_id.'_contexttimeout', 'context_timeout('.$context['ID'].', '.$user_id.');', $timeout);
+    if (!$no_action) {
+     include_once(DIR_MODULES.'patterns/patterns.class.php');
+     $pt=new patterns();
+     $pt->runPatternAction($context['ID']);
+    }
    } else {
     context_clear();
     clearTimeOut('user_'.$user_id.'_contexttimeout');
@@ -95,6 +114,9 @@
    $session->data['SITE_USER_ID']=$user['ID'];
 
    $context=SQLSelectOne("SELECT * FROM patterns WHERE ID='".(int)$id."'");
+   if (!$context['TIMEOUT_CONTEXT_ID']) {
+    context_activate(0);
+   }
    if ($context['TIMEOUT_SCRIPT']) {
                  try {
                    $code=$context['TIMEOUT_SCRIPT'];
@@ -106,7 +128,9 @@
                    DebMes('Error: exception '.get_class($e).', '.$e->getMessage().'.');
                   }
    }
-   context_activate((int)$context['TIMEOUT_CONTEXT_ID']);
+   if ($context['TIMEOUT_CONTEXT_ID']) {
+    context_activate((int)$context['TIMEOUT_CONTEXT_ID']);
+   }
   }
 
 

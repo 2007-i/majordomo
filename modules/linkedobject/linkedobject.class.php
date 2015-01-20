@@ -1,4 +1,4 @@
-<?
+<?php
 /**
 * LinkedObject 
 *
@@ -122,6 +122,17 @@ function run() {
    $out['UNIQ']=$uniq;
   } else {
    $out['UNIQ']=rand(0, 999999);
+  }
+
+  if ($op=='redirect') {
+   global $object;
+   global $sub;
+   $obj=getObject($object);
+   if ($sub!='') {
+    redirect(ROOTHTML.'panel/class/'.$obj->class_id.'/object/'.$obj->id.'/'.$sub.'.html');
+   } else {
+    redirect(ROOTHTML.'panel/class/'.$obj->class_id.'/object/'.$obj->id.'.html');
+   }
   }
 
   if ($ajax==1) {

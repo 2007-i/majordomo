@@ -145,6 +145,15 @@ function admin(&$out) {
  }
  if ($this->data_source=='scenes' || $this->data_source=='') {
 
+  if ($this->view_mode=='moveup' && $this->id) {
+   $this->reorder_scenes($this->id, 'up');
+   $this->redirect("?");
+  }
+  if ($this->view_mode=='movedown' && $this->id) {
+   $this->reorder_scenes($this->id, 'down');
+   $this->redirect("?");
+  }
+
   if ($this->view_mode=='import_elements') {
 
    global $id;
@@ -496,10 +505,14 @@ function usual(&$out) {
       $states[$i]['STATE']=$this->checkState($states[$i]['ID']);
       if ($states[$i]['HTML']!='') {
        if (preg_match('/\[#/is', $states[$i]['HTML'])) {
-        $states[$i]['HTML']='';
+        //$states[$i]['HTML']=str_replace('#', '', $states[$i]['HTML']);
+        unset($states[$i]['HTML']);
        } else {
         $states[$i]['HTML']=processTitle($states[$i]['HTML'], $this);
        }
+      }
+      if ($states[$i]['TYPE']=='img') {
+       unset($states[$i]['HTML']);
       }
      }
      echo json_encode($states);
@@ -533,6 +546,9 @@ function usual(&$out) {
       $states[$i]['STATE']=$this->checkState($states[$i]['ID']);
       if ($states[$i]['HTML']!='') {
        $states[$i]['HTML']=processTitle($states[$i]['HTML'], $this);
+      }
+      if ($states[$i]['TYPE']=='img') {
+       unset($states[$i]['HTML']);
       }
      }
      echo json_encode($states);
@@ -701,8 +717,38 @@ function usual(&$out) {
    $priority-=10;
    SQLUpdate('elements', $all_elements[$i]);
   }
+  
+ }
+
+ function reorder_scenes($id, $direction='up') {
+  $element=SQLSelectOne("SELECT * FROM scenes WHERE ID='".(int)$id."'");
+  $all_elements=SQLSelect("SELECT * FROM scenes WHERE 1 ORDER BY PRIORITY DESC, TITLE");
+
+  $total=count($all_elements);
 
 
+  for($i=0;$i<$total;$i++) {
+   if ($all_elements[$i]['ID']==$id && $i>0 && $direction=='up') {
+    $tmp=$all_elements[$i-1];
+    $all_elements[$i-1]=$all_elements[$i];
+    $all_elements[$i]=$tmp;
+    break;
+   }
+   if ($all_elements[$i]['ID']==$id && $i<($total-1) && $direction=='down') {
+    $tmp=$all_elements[$i+1];
+    $all_elements[$i+1]=$all_elements[$i];
+    $all_elements[$i]=$tmp;
+    break;
+   }
+  }
+
+  $priority=($total)*10;
+
+  for($i=0;$i<$total;$i++) {
+   $all_elements[$i]['PRIORITY']=$priority;
+   $priority-=10;
+   SQLUpdate('scenes', $all_elements[$i]);
+  }
   
  }
 
@@ -832,6 +878,9 @@ function usual(&$out) {
        $states=SQLSelect("SELECT * FROM elm_states WHERE ELEMENT_ID='".$elements[$ie]['ID']."' ORDER BY PRIORITY DESC, TITLE");
        $total_s=count($states);
        for($is=0;$is<$total_s;$is++) {
+        if ($elements[$ie]['TYPE']=='img') {
+         unset($states[$is]['HTML']);
+        }
         if ($states[$is]['HTML']!='') {
          $states[$is]['HTML']=processTitle($states[$is]['HTML']);
         }
