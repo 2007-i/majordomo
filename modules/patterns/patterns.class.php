@@ -378,6 +378,10 @@ function usual(&$out) {
       }
      }
 
+     if ($data['MEDIA_URL']) {
+      playMedia($data['MEDIA_URL']);
+     }
+
      context_activate_ext($data['NEW_CONTEXT'], (int)$data['TIMEOUT'], $data['TIMEOUT_CODE'], (int)$data['TIMEOUT_CONTEXT_ID']);
 
      return $data['MATCHED_CONTEXT'];
@@ -450,7 +454,7 @@ function usual(&$out) {
   }
 
 
- function runPatternAction($id, $matches=array()) {
+ function runPatternAction($id, $matches=array(), $original='') {
   $rec=SQLSelectOne("SELECT * FROM patterns WHERE ID='".(int)$id."'");   
 
      global $noPatternMode;
@@ -485,6 +489,8 @@ function usual(&$out) {
   global $session;
   global $pattern_matched;
 
+
+  $this_pattern_matched=0;
 
   $rec=SQLSelectOne("SELECT * FROM patterns WHERE ID='".(int)$id."'");
 
@@ -539,10 +545,14 @@ function usual(&$out) {
       $is_common=(int)$parent_rec['IS_COMMON_CONTEXT'];
      }
 
+     if (context_getcurrent()) {
+      $history=context_get_history().' '.$history;
+     }
+
      if ($rec['IS_CONTEXT']) {
-      context_activate($rec['ID']);
+      context_activate($rec['ID'], 1, $history);
      } elseif ($rec['MATCHED_CONTEXT_ID']) {
-      context_activate($rec['MATCHED_CONTEXT_ID']);
+      context_activate($rec['MATCHED_CONTEXT_ID'], 0, $history);
      } elseif (!$is_common) {
       context_activate(0);
      }
@@ -551,22 +561,34 @@ function usual(&$out) {
      $rec['EXECUTED']=time();
      SQLUpdate('patterns', $rec);
      $pattern_matched=1;
+     $this_pattern_matched=1;
 
-     $this->runPatternAction($rec['ID'], $matches);
+     $sub_patterns_matched=0;
 
+     if ($rec['IS_CONTEXT']) {
+      $sub_patterns=SQLSelect("SELECT ID, IS_LAST FROM patterns WHERE PARENT_ID='".$rec['ID']."'");
+      $total=count($sub_patterns);
+      for($i=0;$i<$total;$i++) {
+       if ($this->checkPattern($sub_patterns[$i]['ID'])) {
+        $sub_patterns_matched=1;
+        if ($sub_patterns[$i]['IS_LAST']) {
+         break;
+        }
+       }
+      }
+     }
+
+     if (!$sub_patterns_matched) {
+      $this->runPatternAction($rec['ID'], $matches, $history);
+     }
 
    }
 
+  } else {
+   $this_pattern_matched=0;
   }
 
-
- if ($pattern_matched) {
-  return 1;
- } else {
-  return 0;
- }
-
-
+  return $this_pattern_matched;
  }
 
 /**

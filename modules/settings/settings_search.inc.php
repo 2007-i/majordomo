@@ -36,6 +36,24 @@
  }
  $out['SECTIONS']=$sections;
 
+ if ($this->filter_name=='' && !defined('SETTINGS_GENERAL_ALICE_NAME')) {
+  $options=array(
+   'GENERAL_ALICE_NAME'=>'Computer\'s name'
+  );
+
+  foreach($options as $k=>$v) {
+   $tmp=SQLSelectOne("SELECT ID FROM settings WHERE NAME LIKE '".$k."'");
+   if (!$tmp['ID']) {
+    $tmp=array();
+    $tmp['NAME']=$k;
+    $tmp['TITLE']=$v;
+    $tmp['TYPE']='text';
+    $tmp['DEFAULTVALUE']='';
+    SQLInsert('settings', $tmp);
+   }
+  }
+ }
+
  if ($this->filter_name=='hook' && !defined('SETTINGS_HOOK_AFTER_PLAYSOUND')) {
   //SETTINGS_HOOK_BEFORE_PLAYSOUND
   //SETTINGS_HOOK_AFTER_PLAYSOUND
@@ -74,6 +92,24 @@
   }
   $query = "CREATE TABLE IF NOT EXISTS `log4php_log` (`timestamp` DATETIME, `logger` VARCHAR(256), `level` VARCHAR(32), `message` VARCHAR(4000), `thread` INTEGER, `file` VARCHAR(255), `line` VARCHAR(10));";
   SQLExec($query);
+
+ }
+
+ if ($this->filter_name=='scenes' && !defined('SETTINGS_SCENES_VERTICAL_NAV')) {
+  $options=array(
+   'SCENES_VERTICAL_NAV'=>'Vertical navigation'
+  );
+  foreach($options as $k=>$v) {
+   $tmp=SQLSelectOne("SELECT ID FROM settings WHERE NAME LIKE '".$k."'");
+   if (!$tmp['ID']) {
+    $tmp=array();
+    $tmp['NAME']=$k;
+    $tmp['TITLE']=$v;
+    $tmp['TYPE']='onoff';
+    $tmp['DEFAULTVALUE']='0';
+    SQLInsert('settings', $tmp);
+   }
+  }
 
  }
 

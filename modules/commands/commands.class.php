@@ -247,18 +247,15 @@ function admin(&$out) {
    global $new_value;
    $item=SQLSelectOne("SELECT * FROM commands WHERE ID='".(int)$item_id."'");
    if ($item['ID']) {
+    $old_value=$item['CUR_VALUE'];
     $item['CUR_VALUE']=$new_value;
     SQLUpdate('commands', $item);
     if ($item['LINKED_PROPERTY']!='') {
-     $old_value=gg($item['LINKED_OBJECT'].'.'.$item['LINKED_PROPERTY']);
+     //$old_value=gg($item['LINKED_OBJECT'].'.'.$item['LINKED_PROPERTY']);
      sg($item['LINKED_OBJECT'].'.'.$item['LINKED_PROPERTY'], $item['CUR_VALUE'], array($this->name=>'ID!='.$item['ID']));
-     //DebMes("setting property ".$item['LINKED_OBJECT'].".".$item['LINKED_PROPERTY']." to ".$item['CUR_VALUE']);
     }
 
-    $params=array('VALUE'=>$item['CUR_VALUE']);
-    if (isSet($old_value)) {
-     $params['OLD_VALUE']=$old_value;
-    }
+    $params=array('VALUE'=>$item['CUR_VALUE'], 'OLD_VALUE'=>$old_value);
 
     if ($item['ONCHANGE_METHOD']!='') {
      if (!$item['LINKED_OBJECT']) {
@@ -749,10 +746,10 @@ commands - Commands
  commands: HEIGHT int(10) NOT NULL DEFAULT '0'
  commands: PARENT_ID int(10) NOT NULL DEFAULT '0'
  commands: PRIORITY int(10) NOT NULL DEFAULT '0'
- commands: MIN_VALUE int(10) NOT NULL DEFAULT '0'
- commands: MAX_VALUE int(10) NOT NULL DEFAULT '0'
+ commands: MIN_VALUE float(10) NOT NULL DEFAULT '0'
+ commands: MAX_VALUE float(10) NOT NULL DEFAULT '0'
  commands: CUR_VALUE varchar(255) NOT NULL DEFAULT '0'
- commands: STEP_VALUE int(10) NOT NULL DEFAULT '1'
+ commands: STEP_VALUE float(10) NOT NULL DEFAULT '1'
  commands: DATA text
  commands: LINKED_OBJECT varchar(255) NOT NULL DEFAULT ''
  commands: LINKED_PROPERTY varchar(255) NOT NULL DEFAULT ''
@@ -777,6 +774,11 @@ commands - Commands
  commands: AUTO_UPDATE int(10) NOT NULL DEFAULT '0'
 EOD;
   parent::dbInstall($data);
+
+  SQLExec("ALTER TABLE `commands` CHANGE `MIN_VALUE` `MIN_VALUE` FLOAT( 10 ) NOT NULL DEFAULT '0'");
+  SQLExec("ALTER TABLE `commands` CHANGE `MAX_VALUE` `MAX_VALUE` FLOAT( 10 ) NOT NULL DEFAULT '0'");
+  SQLExec("ALTER TABLE `commands` CHANGE `STEP_VALUE` `STEP_VALUE` FLOAT( 10 ) NOT NULL DEFAULT '0'");
+
  }
 // --------------------------------------------------------------------
 }
