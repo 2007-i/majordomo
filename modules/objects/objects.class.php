@@ -643,6 +643,7 @@ curl_close($ch);
     }
 
     $cached_name='MJD:'.$this->object_title.'.'.$property;
+    
     saveToCache($cached_name, $value);
 
    } else {

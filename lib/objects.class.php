@@ -159,10 +159,10 @@
   
   $cached_name='MJD:'.$object_name.'.'.$varname;
   $cached_value=checkFromCache($cached_name);
-  if ($cached_value!=false) {
+  
+  if ($cached_value != false) 
    return $cached_value;
-  }
-
+  
   $obj=getObject($object_name);
   if ($obj) {
    $value=$obj->getProperty($varname);
