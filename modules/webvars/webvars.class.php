@@ -225,8 +225,12 @@ function usual(&$out) {
   for($i=0;$i<$total;$i++) {
    $host=$pings[$i];
    if (!$force) {
-    echo "Checking webvar: ".processTitle($host['HOSTNAME'])."\n";
+    echo date('H:i:s')." Checking webvar: ".processTitle($host['HOSTNAME'])."\n";
    }
+   if (!$host['HOSTNAME']) {
+    continue;
+   }
+
    $online_interval=$host['ONLINE_INTERVAL'];
    if (!$online_interval) {
     $online_interval=60;
@@ -273,7 +277,8 @@ function usual(&$out) {
    }
    
    if (!$ok) {
-    $host['LOG']=date('Y-m-d H:i:s').' incorrect value:'.$new_status."\n".$host['LOG'];
+
+    $host['LOG'].=date('Y-m-d H:i:s').' incorrect value:'.$new_status."\n";
     $tmp=explode("\n", $host['LOG']);
     $total=count($tmp);
     if ($total>50) {

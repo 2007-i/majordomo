@@ -447,6 +447,11 @@ curl_close($ch);
   
  }
 
+
+ function callClassMethod($name, $params=0) {
+  $this->callMethod($name, $params, 1);
+ }
+
 /**
 * Title
 *
@@ -638,11 +643,13 @@ curl_close($ch);
     $v['UPDATED']=date('Y-m-d H:i:s');
     if ($old_value!=$value) {
      SQLUpdate('pvalues', $v);
-     //DebMes("Setting [".$this->object_title.".".$property."] to new value [".$value."]");
     } else {
      SQLExec("UPDATE pvalues SET UPDATED='".$v['UPDATED']."' WHERE ID='".$v['ID']."'");
-     //DebMes("Setting [".$this->object_title.".".$property."] to the same value [".$value."]");
     }
+
+    $cached_name='MJD:'.$this->object_title.'.'.$property;
+    saveToCache($cached_name, $value);
+
    } else {
     $v['PROPERTY_ID']=$id;
     $v['OBJECT_ID']=$this->id;

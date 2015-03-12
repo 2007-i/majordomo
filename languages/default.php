@@ -14,7 +14,7 @@ $dictionary=array(
 'WIKI_URL'=>'http://majordomohome.com/',
 'DEFAULT_COMPUTER_NAME'=>'Alice',
 'WELCOME_GREETING'=>'Welcome!',
-'WELCOME_TEXT'=>'Thank you for using MajorDoMo -- an open-source home automation platform. <br/><br/>Read more about it and join our community: <a href="<#LANG_WIKI_URL#>" target=_blank>Web-site</a> | <a href="<#LANG_WIKI_URL#>forum/" target=_blank>Forum</a> | <a href="https://www.facebook.com/SmartLivingRu" target=_blank>Facebook page</a> <br/>&nbsp;<br/>&nbsp;<br/><small>P.S. You can customize or delete this page using <a href="/admin.php?pd=&md=panel&inst=&action=layouts">Control Panel</a> (login/password: admin / admin)</small>',
+'WELCOME_TEXT'=>'Thank you for using MajorDoMo -- an open-source home automation platform. <br/><br/>Read more about it and join our community: <a href="<#LANG_WIKI_URL#>" target=_blank>Web-site</a> | <a href="<#LANG_WIKI_URL#>forum/" target=_blank>Forum</a> | <a href="https://www.facebook.com/SmartLivingRu" target=_blank>Facebook page</a> <br/>&nbsp;<br/>&nbsp;<br/><small>P.S. You can customize or delete this page using <a href="/admin.php?pd=&md=panel&inst=&action=layouts">Control Panel</a></small>',
 'CONTROL_PANEL'=>'Control Panel',
 'TERMINAL'=>'Terminal',
 'USER'=>'User',
@@ -768,6 +768,7 @@ $dictionary=array(
 'SHOW_MENU_ON_CLICK'=>'Show menu on click',
 'SHOW_HOMEPAGE_ON_CLICK'=>'Show page on click',
 'SHOW_URL_ON_CLICK'=>'Show URL on click',
+'SHOW_SCENE_ON_CLICK'=>'Show other scene',
 
 
 'DISPLAY_CONDITION'=>'Display condition', // scenes/elements_edit.html; 
@@ -994,6 +995,8 @@ $dictionary=array(
 'CLASS_OBJECTS'=>'Class objects',
 'OBJECT_PROPERTIES'=>'Object properties',
 'OBJECT_METHODS'=>'Object methods',
+'PORT'=>'Port',
+'USE_DEFAULT'=>'use default',
 
 
 'TEST'=>'test'
