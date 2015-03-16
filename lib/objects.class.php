@@ -3,6 +3,73 @@
 * @version 0.1 (auto-set)
 */
 
+ function addClass($class_name, $parent_class='') {
+  if ($parent_class!='') {
+   $parent_class_id=addClass($parent_class);
+  } else {
+   $parent_class_id=0;
+  }
+  $class=SQLSelectOne("SELECT ID FROM classes WHERE TITLE LIKE '".DBSafe($class_name)."'");
+  if ($class['ID']) {
+   return $class['ID'];
+  } else {
+   $class=array();
+   $class['TITLE']=$class_name;
+   $class['PARENT_ID']=(int)$parent_class_id;
+   $class['ID']=SQLInsert('classes', $class);
+  }
+ }
+
+ function addClassMethod($class_name, $method_name, $code='') {
+  $class_id=addClass($class_name) ;
+  if ($class_id) {
+   $method=SQLSelectOne("SELECT * FROM methods WHERE CLASS_ID='".$class_id."' AND TITLE LIKE '".DBSafe($method_name)."' AND OBJECT_ID=0");
+   if (!$method['ID']) {
+    $method=array();
+    $method['CLASS_ID']=$class_id;
+    $method['OBJECT_ID']=0;
+    $method['CODE']=$code;
+    $method['TITLE']=$method_name;
+    $method['ID']=SQLInsert('methods', $method);
+   } else {
+    if ($code!='' && $method['CODE']!=$code) {
+     $method['CODE']=$code;
+     SQLUpdate('methods', $method);
+    }
+    return $method['ID'];
+   }
+  }
+ }
+
+ function addClassProperty($class_name, $property_name, $keep_history=0) {
+  $class_id=addClass($class_name);
+  $prop=SQLSelectOne("SELECT ID FROM properties WHERE TITLE LIKE '".DBSafe($property_name)."' AND OBJECT_ID=0 AND CLASS_ID='".$class_id."'");
+  if (!$prop['ID']) {
+   $prop=array();
+   $prop['CLASS_ID']=$class_id;
+   $prop['TITLE']=$property_name;
+   $prop['KEEP_HISTORY']=$keep_history;
+   $prop['OBJECT_ID']=0;
+   $prop['ID']=SQLInsert('properties', $prop);
+  }
+  return $prop['ID'];
+ }
+
+
+ function addClassObject($class_name, $object_name) {
+  $class_id=addClass($class_name);
+  $object=SQLSelectOne("SELECT ID FROM objects WHERE TITLE LIKE '".DBSafe($object_name)."'");
+  if ($object['ID']) {
+   return $object['ID'];
+  } else {
+   $object=array();
+   $object['TITLE']=$object_name;
+   $object['CLASS_ID']=$class_id;
+   $object['ID']=SQLInsert('objects', $object);
+  }
+ }
+
+
 
   function getValueIdByName($object_name, $property) {
 
@@ -159,10 +226,10 @@
   
   $cached_name='MJD:'.$object_name.'.'.$varname;
   $cached_value=checkFromCache($cached_name);
-  
-  if ($cached_value != false) 
+  if ($cached_value!==false) {
    return $cached_value;
-  
+  }
+
   $obj=getObject($object_name);
   if ($obj) {
    $value=$obj->getProperty($varname);
@@ -235,6 +302,10 @@
 */
   function processTitle($title, $object=0) {
 
+   global $title_memory_cache;
+
+   $key=$title;
+
    if (!$title) {
     return $title;
    }
@@ -243,27 +314,38 @@
 
    $in_title=substr($title, 0, 100);
 
-   startMeasure('processTitle ['.$in_title.']');
+   //startMeasure('processTitle ['.$in_title.']');
 
    if ($in_title!='') {
 
+    if (($_SERVER['REQUEST_METHOD']=='GET' || $_SERVER['REQUEST_METHOD']=='POST')) {
+     if ($title_memory_cache[$key]) {
+      return $title_memory_cache[$key];
+     }
+    }
+
 
    if (preg_match('/\[#.+?#\]/is', $title)) {
+    startMeasure('processTitleJTemplate');
     if ($object) {
      $jTempl=new jTemplate($title, $object->data, $object);
     } else {
      $jTempl=new jTemplate($title, $data, $this);
     }
     $title=$jTempl->result;
+    endMeasure('processTitleJTemplate');
    }
 
 
    $title=preg_replace('/%rand%/is', rand(), $title);
+
    if (preg_match_all('/%([\w\d\.]+?)\.([\w\d\.]+?)%/is', $title, $m)) {
+    startMeasure('processTitleProperties');
     $total=count($m[0]);
     for($i=0;$i<$total;$i++) {
      $title=str_replace($m[0][$i], getGlobal($m[1][$i].'.'.$m[2][$i]), $title);
     }
+    endMeasure('processTitleProperties');
    } elseif (preg_match_all('/%([\w\d\.]+?)%/is', $title, $m)) {
     $total=count($m[0]);
     for($i=0;$i<$total;$i++) {
@@ -290,7 +372,11 @@
 
    }
 
-   endMeasure('processTitle ['.$in_title.']', 1);
+   //endMeasure('processTitle ['.$in_title.']', 1);
+   if (($_SERVER['REQUEST_METHOD']=='GET' || $_SERVER['REQUEST_METHOD']=='POST')) {
+    $title_memory_cache[$key]=$title;
+   }
+
    endMeasure('processTitle', 1);
    return $title;
   }

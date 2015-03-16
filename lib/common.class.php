@@ -522,6 +522,7 @@
   if (file_exists($filename)) {
    $data=LoadFile($filename);
    $data=str_replace("\r", '', $data);
+   $data=str_replace("\n\n", "\n", $data);
    $lines=mb_split("\n", $data);
    $total=count($lines);
    $line=$lines[round(rand(0, $total-1))];
@@ -578,6 +579,11 @@
 * @access public
 */
  function playMedia($path, $host='localhost') {
+
+  if (defined('SETTINGS_HOOK_PLAYMEDIA') && SETTINGS_HOOK_PLAYMEDIA!='') {
+   eval(SETTINGS_HOOK_PLAYMEDIA);
+  }
+
   $terminal=SQLSelectOne("SELECT * FROM terminals WHERE HOST LIKE '".DBSafe($host)."' OR NAME LIKE '".DBSafe($host)."' OR TITLE LIKE '".DBSafe($host)."'");
   if (!$terminal['ID']) {
    $terminal=SQLSelectOne("SELECT * FROM terminals WHERE CANPLAY=1 ORDER BY ID");
@@ -708,7 +714,7 @@
     }
 } 
 
- function getFilesTree($destination) {
+ function getFilesTree($destination,$sort='name') {
 
   if (substr($destination, -1)=='/' || substr($destination, -1)=='\\') {
    $destination=substr($destination, 0, strlen($destination)-1);
@@ -735,6 +741,11 @@
   }     
   closedir($dir); 
  }
+
+ if ($sort=='name') {
+  sort($res, SORT_STRING);
+ }
+
  return $res;
  }
 
