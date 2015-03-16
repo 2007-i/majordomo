@@ -17,9 +17,9 @@ $db = new mysql(DB_HOST, '', DB_USER, DB_PASSWORD, DB_NAME);
 include_once("./load_settings.php");
 include_once(DIR_MODULES."control_modules/control_modules.class.php");
 
-$ctl=new control_modules();
+$ctl = new control_modules();
 
-if (!Defined('SETTINGS_BLUETOOTH_CYCLE') || SETTINGS_BLUETOOTH_CYCLE==0) 
+if (!Defined('SETTINGS_BLUETOOTH_CYCLE') || SETTINGS_BLUETOOTH_CYCLE == 0) 
    exit;
 
 $bt_devices=array();
@@ -44,7 +44,7 @@ while(1)
       $data = '';
       
      
-      if (substr(php_uname(), 0, 7) == "Windows") 
+      if (IsWindowsOS()) 
       {   
          // windows scanner
          @unlink($devices_file);   

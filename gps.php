@@ -278,13 +278,18 @@ $db->Disconnect();
 
 endMeasure('TOTAL'); // end calculation of execution time
 
-// ������ �����
-function calculateTheDistance ($latA, $lonA, $latB, $lonB) 
+/**
+ * Calculate distance between two coords
+ * @param mixed $latA Point A Latitude
+ * @param mixed $lonA Point A Longitude
+ * @param mixed $latB Point B Latutude
+ * @param mixed $lonB Point B Longitude
+ * @return double
+ */
+function calculateTheDistance($latA, $lonA, $latB, $lonB) 
 {
    define('EARTH_RADIUS', 6372795);
-   //$lat1= $latA;
-   //$lat2= $la
-
+   
    $lat1 = $latA * M_PI / 180;
    $lat2 = $latB * M_PI / 180;
    $long1 = $lonA * M_PI / 180;
@@ -301,7 +306,6 @@ function calculateTheDistance ($latA, $lonA, $latB, $lonB)
    $y = sqrt(pow($cl2 * $sdelta, 2) + pow($cl1 * $sl2 - $sl1 * $cl2 * $cdelta, 2));
    $x = $sl1 * $sl2 + $cl1 * $cl2 * $cdelta;
 
-   //
    $ad = atan2($y, $x);
    $dist = $ad * EARTH_RADIUS;
 

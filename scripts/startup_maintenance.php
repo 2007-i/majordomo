@@ -49,16 +49,14 @@ sleep(5);
 if ($full_backup) 
 {
    echo "Backing up files...";
-   if (defined('PATH_TO_MYSQLDUMP')) {
-    exec(PATH_TO_MYSQLDUMP." --user=".DB_USER." --password=".DB_PASSWORD." --no-create-db --add-drop-table --databases ".DB_NAME.">". $target_dir . "/" . DB_NAME . ".sql");
-   } else {
-    if (substr(php_uname(), 0, 7) == "Windows") {
-      exec(SERVER_ROOT . "/server/mysql/bin/mysqldump --user=".DB_USER." --password=".DB_PASSWORD." --no-create-db --add-drop-table --databases " . DB_NAME . ">" . $target_dir . "/" . DB_NAME . ".sql");
-    }
-    else {
-      exec("/usr/bin/mysqldump --user=" . DB_USER . " --password=".DB_PASSWORD." --no-create-db --add-drop-table --databases ". DB_NAME . ">" . $target_dir . "/" . DB_NAME . ".sql");
-    }
-   }
+   
+   if (defined('PATH_TO_MYSQLDUMP'))
+      $pathToMysqlDump = PATH_TO_MYSQLDUMP;
+   else
+      $pathToMysqlDump = IsWindowsOS() ? SERVER_ROOT . "/server/mysql/bin/mysqldump" : "/usr/bin/mysqldump";
+   
+   exec($pathToMysqlDump . " --user=" . DB_USER . " --password=" . DB_PASSWORD . " --no-create-db --add-drop-table --databases ". DB_NAME . ">" . $target_dir . "/" . DB_NAME . ".sql");
+   
    copyTree('./cms',    $target_dir . '/cms',    1);
    copyTree('./texts',  $target_dir . '/texts',  1);
    copyTree('./sounds', $target_dir . '/sounds', 1);

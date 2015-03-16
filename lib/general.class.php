@@ -256,24 +256,6 @@ function paging(&$data, $onPage, &$out) {
 
 
 // --------------------------------------------------------------------   
-function checkEmail($email) {
- if (!preg_match("/^([_a-z0-9-]+)(\.[_a-z0-9-]+)*@([a-z0-9-]+)(\.[a-z0-9-]+)*(\.[a-z]{2,4})$/" , strtolower($email))) {
-  return false;
- }
- return true;
-}
-
-// --------------------------------------------------------------------   
-function checkPassword($psw) {
- // checking valid password field
- if (strlen($psw)>=4) {
-  return 1;
- } else {
-  return 0;
- }
-}
-
-// --------------------------------------------------------------------   
 function checkGeneral($field) {
  // checking valid general field
  if (strlen($field)>=2) {
@@ -546,14 +528,16 @@ function clearCache($verbose=0) {
   }
  }
 
-  function ping($host) {
-    if (substr(php_uname(), 0, 7) == "Windows"){
-    exec(sprintf('ping -n 1 %s', escapeshellarg($host)), $res, $rval);
-    } else {
-     exec(sprintf('ping -c 1 -W 5 %s', escapeshellarg($host)), $res, $rval);
-    }
-    return $rval === 0 && preg_match('/ttl/is', join('', $res));
-  }
+   function ping($host)
+   {
+      $curHost = escapeshellarg($host);
+      if (IsWindowsOS())
+         exec(sprintf('ping -n 1 %s', $curHost), $res, $rval);
+      else
+         exec(sprintf('ping -c 1 -W 5 %s', $curHost), $res, $rval);
+     
+      return $rval === 0 && preg_match('/ttl/is', join('', $res));
+   }
 
  function transliterate($string) {
     $converter = array(

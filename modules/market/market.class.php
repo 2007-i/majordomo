@@ -253,15 +253,11 @@ function getLatest(&$out, $url, $name, $version) {
   global $file_name;
   global $folder;
 
-  if (!$folder) {
-   if (substr(php_uname(), 0, 7) == "Windows") {
-    $folder='/.';
-   } else {
-    $folder='/';
-   }
-  } else {
-   $folder='/'.$folder;
-  }
+   if (!$folder)
+      $folder = IsWindowsOS() ? '/.' : '/';
+   else
+      $folder = '/' . $folder;
+
 
   if ($restore!='') {
    $file=$restore;
@@ -277,14 +273,16 @@ function getLatest(&$out, $url, $name, $version) {
 
        chdir(ROOT.'saverestore/temp');
 
-       if (substr(php_uname(), 0, 7) == "Windows") {
-       // for windows only
-        exec(DOC_ROOT.'/gunzip ../'.$file, $output, $res);
-        //echo DOC_ROOT.'/tar xvf ../'.str_replace('.tgz', '.tar', $file);exit;
-        exec(DOC_ROOT.'/tar xvf ../'.str_replace('.tgz', '.tar', $file), $output, $res);
-       } else {
-        exec('tar xzvf ../'.$file, $output, $res);
-       }
+      if (IsWindowsOS())
+      {
+         // for windows only
+         exec(DOC_ROOT.'/gunzip ../'.$file, $output, $res);
+         exec(DOC_ROOT.'/tar xvf ../'.str_replace('.tgz', '.tar', $file), $output, $res);
+      }
+      else
+      {
+         exec('tar xzvf ../'.$file, $output, $res);
+      }
 
         $x = 0;
         $dir=opendir('./');
