@@ -248,10 +248,9 @@ function usual(&$out) {
     $content=getURL(processTitle($host['HOSTNAME']), $host['ONLINE_INTERVAL']);
    }
 
-   if ($host['ENCODING']!='') {
-    $content=iconv($host['ENCODING'], "UTF-8", $content);
-   }
-
+   if ($host['ENCODING'] != '')
+    $content = Core_Convert::ToUtf8($host['ENCODING'], $content);
+   
    $ok=1;
    $new_status='';
    if ($host['SEARCH_PATTERN']) {

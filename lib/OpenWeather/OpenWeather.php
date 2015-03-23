@@ -14,15 +14,12 @@ class OpenWeather
 {
    /**
     * Get current weather data by City name
-    * @param $vCountry  CountrtyCode
-    * @param $vCity     CityName
-    * @param $vUnits    Unita
+    * @param string $vCountry  CountrtyCode
+    * @param string $vCity CityName
+    * @param string $vUnits  Unita
     * @return
     */
-   protected static function GetJsonWeatherDataByCityName
-     ($vCountry,
-      $vCity,
-      $vUnits)
+   protected static function GetJsonWeatherDataByCityName($vCountry, $vCity, $vUnits)
    {
       $city  = '';
         
@@ -45,13 +42,11 @@ class OpenWeather
       
    /**
     * Get Weather data from openweathermap.org by city id
-    * @param $vCityID   CityID
-    * @param $vUnits    Unit(metric/imperial)
+    * @param int $vCityID CityID
+    * @param string $vUnits Unit(metric/imperial)
     * @return
     */
-   protected static function GetJsonWeatherDataByCityID
-     ($vCityID,
-      $vUnits = "metric")
+   protected static function GetJsonWeatherDataByCityID($vCityID, $vUnits = "metric")
    {
       if (!isset($vCityID)) return null;
       
@@ -63,25 +58,11 @@ class OpenWeather
    }
       
    /**
-    * Get wind direction name by direction in degree 
-    * @param $degree Degree
-    * @return
-    */
-   private static function GetWindDirection
-     ($degree)
-   {
-      $windDirection = ['<#LANG_N#>', '<#LANG_NNE#>', '<#LANG_NE#>', '<#LANG_ENE#>', '<#LANG_E#>', '<#LANG_ESE#>', '<#LANG_SE#>', '<#LANG_SSE#>', '<#LANG_S#>', '<#LANG_SSW#>', '<#LANG_SW#>', '<#LANG_WSW#>', '<#LANG_W#>', '<#LANG_WNW#>', '<#LANG_NW#>', '<#LANG_NNW#>', '<#LANG_N#>'];
-         
-      return $windDirection[round($degree / 22.5)];
-   }
-      
-   /**
     * Check units for weather. If unit unknown or incorrect then units = metric
-    * @param $vUnits
-    * @return
+    * @param string $vUnits Units
+    * @return string
     */
-   private static function GetUnits
-     ($vUnits)
+   private static function GetUnits($vUnits)
    {
       $units = "metric";
          
@@ -96,11 +77,11 @@ class OpenWeather
    /**
     * Convert Pressure from one system to another. 
     * If error or system not found then function return current pressure.
-    * @param $vPressure 
-    * @param $vFrom
-    * @param $vTo
-    * @param $vPrecision
-    * @return
+    * @param double $vPressure 
+    * @param string $vFrom
+    * @param string $vTo
+    * @param int $vPrecision
+    * @return double
     */
    public static function ConvertPressure($vPressure, $vFrom, $vTo, $vPrecision = 2)
    {
@@ -115,10 +96,10 @@ class OpenWeather
       $vTo       = strtolower($vTo);
       
       if ($vFrom == "hpa" && $vTo == "mmhg")
-         return round($vPressure * 0.75006375541921, $vPrecision);
+         return Core_Convert::PressureHpaToMmhg($vPressure, $vPrecision);
       
       if ($vFrom == "mmhg" && $vTo == "hpa")
-         return round($vPressure * 1.33322, $vPrecision);
+         return Core_Convert::PressureMmhgToHpa($vPressure, $vPrecision);
       
       return $vPressure;
    }
@@ -126,7 +107,7 @@ class OpenWeather
    /**
     * Get url to weather's image by icon 
     * @param $vImageIcon
-    * @return
+    * @return string|null
     */
    private static function GetWeatherImage($vImageIcon)
    {
@@ -139,15 +120,12 @@ class OpenWeather
       
    /**
     * Get html weather widget with current wheather for page
-       * @param $vCountry CountryCode
-       * @param $vCity    CityName
-       * @param $vUnits   Units
+       * @param string $vCountry CountryCode
+       * @param string $vCity    CityName
+       * @param string $vUnits   Units
        * @return
        */
-   public static function GetCurrentWeatherWidget
-     ($vCountry,
-      $vCity,
-      $vUnits)
+   public static function GetCurrentWeatherWidget($vCountry, $vCity, $vUnits)
    {
       $vUnits  = OpenWeather::GetUnits($vUnits);
       $weather = OpenWeather::GetJsonWeatherDataByCityName($vCountry,$vCity,$vUnits);
@@ -176,10 +154,10 @@ class OpenWeather
          $widget .= "   <tbody>";
          $widget .= "      <tr>";
          $widget .= "         <td><#LANG_WIND#></td>";
-         $widget .= "         <td><#LANG_SPEED#> " . $weather->wind->speed . "<#LANG_M_S#> <br />" . OpenWeather::GetWindDirection($weather->wind->deg) . "(" . $weather->wind->deg . "°)</td>";
+         $widget .= "         <td><#LANG_SPEED#> " . $weather->wind->speed . "<#LANG_M_S#> <br />" . Core_Convert::WindDirectionToName($weather->wind->deg) . "(" . $weather->wind->deg . "°)</td>";
          $widget .= "      </tr>";
          
-         $pressure = $vUnits == "metric" ?  OpenWeather::ConvertPressure($weather->main->pressure, "hpa", "mmhg") . "<#LANG_MMHG#>":  $weather->main->pressure . "<#LANG_HPA#>";
+         $pressure = $vUnits == "metric" ?  Core_Convert::PressureHpaToMmhg($weather->main->pressure) . "<#LANG_MMHG#>":  $weather->main->pressure . "<#LANG_HPA#>";
          
          $widget .= "     <tr><td><#LANG_PRESSURE#></td><td>" . $pressure . "</td></tr>";
          $widget .= "     <tr><td><#LANG_HUMIDITY#></td><td>".  $weather->main->humidity . "%</td></tr>";
@@ -194,13 +172,11 @@ class OpenWeather
    
    /**
     * Get html weather widget with current wheather for page
-    * @param $vCityID  CityID
-    * @param $vUnits   Units
+    * @param int $vCityID  CityID
+    * @param string $vUnits   Units
     * @return
     */
-   public static function GetCurrentWeatherWidgetByCityID
-     ($vCityID,
-      $vUnits)
+   public static function GetCurrentWeatherWidgetByCityID($vCityID, $vUnits)
    {
       $vUnits  = OpenWeather::GetUnits($vUnits);
       $weather = OpenWeather::GetJsonWeatherDataByCityID($vCityID,$vUnits);
@@ -229,10 +205,10 @@ class OpenWeather
          $widget .= "   <tbody>";
          $widget .= "      <tr>";
          $widget .= "         <td><#LANG_WIND#></td>";
-         $widget .= "         <td><#LANG_SPEED#> " . $weather->wind->speed . "<#LANG_M_S#> <br />" . OpenWeather::GetWindDirection($weather->wind->deg) . "(" . $weather->wind->deg . "°)</td>";
+         $widget .= "         <td><#LANG_SPEED#> " . $weather->wind->speed . "<#LANG_M_S#> <br />" . Core_Convert::WindDirectionToName($weather->wind->deg) . "(" . $weather->wind->deg . "°)</td>";
          $widget .= "      </tr>";
          
-         $pressure = $vUnits == "metric" ?  OpenWeather::ConvertPressure($weather->main->pressure, "hpa", "mmhg") . "<#LANG_MMHG#>":  $weather->main->pressure . "<#LANG_HPA#>";
+         $pressure = $vUnits == "metric" ? Core_Convert::PressureHpaToMmhg($weather->main->pressure) . "<#LANG_MMHG#>":  $weather->main->pressure . "<#LANG_HPA#>";
          
          $widget .= "     <tr><td><#LANG_PRESSURE#></td><td>" . $pressure . "</td></tr>";
          $widget .= "     <tr><td><#LANG_HUMIDITY#></td><td>".  $weather->main->humidity . "%</td></tr>";
@@ -247,15 +223,12 @@ class OpenWeather
    
    /**
     * GetWeather data from openweathermap.org by Country and City
-    * @param $vCountry
-    * @param $vCity
-    * @param $vUnits
+    * @param string $vCountry
+    * @param string $vCity
+    * @param string $vUnits
     * @return
     */
-   public static function GetWeather
-     ($vCountry,
-      $vCity,
-      $vUnits)
+   public static function GetWeather($vCountry, $vCity, $vUnits)
    {
       $vUnits  = OpenWeather::GetUnits($vUnits);
       $weather = OpenWeather::GetJsonWeatherDataByCityName($vCountry,$vCity,$vUnits);
@@ -265,13 +238,11 @@ class OpenWeather
       
    /**
     * Return weather by City ID
-    * @param $vCityID    CityID
-    * @param $vUnits     Unit(metric/imperial)
+    * @param int $vCityID    CityID
+    * @param string $vUnits     Unit(metric/imperial)
     * @return
     */
-   public static function GetWeatherByCityID
-     ($vCityID,
-      $vUnits)
+   public static function GetWeatherByCityID($vCityID, $vUnits)
    {
       $weather = OpenWeather::GetJsonWeatherDataByCityID($vCityID,$vUnits);
       return $weather;

@@ -98,8 +98,11 @@ foreach($known_fields as $k=>$v)
    
 }
 
-if ($updated['pressure']) {
- setGlobal('ws.pressureRt', round(((float)getGlobal('ws.pressure'))/1.33), 1);
+if ($updated['pressure'])
+{
+   $pressure = (float)getGlobal('ws.pressure');
+   $pressure = Core_Convert::PressureHpaToMmhg($pressure, 0);
+   setGlobal('ws.pressureRt', $pressure, 1);
 }
 
 

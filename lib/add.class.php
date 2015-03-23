@@ -5,12 +5,12 @@
 
 function win2utf($in)
 {
-   return iconv('windows-1251', 'utf-8', $in);
+   return Core_Convert::Cp1251ToUtf8($in);
 }
 
 function utf2win($in)
 {
-   return iconv('utf-8', 'windows-1251', $in);
+   return Core_Convert::Utf8ToCp1251($in);
 }
 
 

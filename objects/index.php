@@ -20,7 +20,7 @@
    $total=count($argv);
    for($i=2;$i<$total;$i++) {
     if (preg_match('/^(.+?):(.*?)$/is', $argv[$i], $matches)) {
-     $url.='&'.$matches[1].'='.urlencode(trim(win2utf($matches[2])));
+     $url.='&'.$matches[1].'='.urlencode(trim(Core_Convert::Cp1251ToUtf8($matches[2])));
     }        
    }
   } else {
@@ -55,29 +55,37 @@
  include_once("./load_settings.php");
 
 
- if ($argv[1]!='') {
-  //echo date('Y-m-d H:i:s')." command line call: ".$argv[1]."\n";
-  //DebMes("command line call: ".$argv[1]);
-  $commandLine=1;
-  if (preg_match('/^(.+?)\.(.+?)$/is', $argv[1], $matches)) {
-   $op="m";
-   $object=$matches[1];
-   $m=$matches[2];
-  }
-
-  $total=count($argv);
-  for($i=1;$i<$total;$i++) {
-   //echo "\n".'|'.$argv[$i].'|'."\n";
-   if (preg_match('/^(.+?)[:=](.*?)$/is', $argv[$i], $matches)) {
-    $_GET[$matches[1]]=trim(win2utf($matches[2]));
-    ${$matches[1]}=trim(win2utf($matches[2]));
-   } else {
-    //echo "Arg: ".$argv[$i]."\n";
-    $_GET['other_params'][]=$argv[$i];
-    $other_params[]=$argv[$i];
+if ($argv[1]!='')
+{
+   //echo date('Y-m-d H:i:s')." command line call: ".$argv[1]."\n";
+   //DebMes("command line call: ".$argv[1]);
+   $commandLine=1;
+   if (preg_match('/^(.+?)\.(.+?)$/is', $argv[1], $matches)) 
+   {
+      $op="m";
+      $object=$matches[1];
+      $m=$matches[2];
    }
-  }
- }
+
+   $total=count($argv);
+   for($i=1;$i<$total;$i++)
+   {
+      //echo "\n".'|'.$argv[$i].'|'."\n";
+      if (preg_match('/^(.+?)[:=](.*?)$/is', $argv[$i], $matches))
+      {
+         $utfMatches = trim(Core_Convert::Cp1251ToUtf8($matches[2]));
+         
+         $_GET[$matches[1]] = $utfMatches;
+         ${$matches[1]} = $utfMatches;
+      }
+      else
+      {
+         //echo "Arg: ".$argv[$i]."\n";
+         $_GET['other_params'][]=$argv[$i];
+         $other_params[]=$argv[$i];
+      }
+   }
+}
 
  foreach($_GET as $k=>$v) {
   $request.='&'.$k.'='.$v;

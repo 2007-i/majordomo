@@ -288,18 +288,16 @@ function usual(&$out) {
 *
 * @access public
 */
-        function convertObjDataToStr ($data)
-        {
-                $data = (string)$data;
-                if ($data)
-                {
-                        return (mb_detect_encoding($data) == 'cp1251') ? iconv('cp1251', 'UTF-8', $data) : $data;
-                }
-                else
-                {
-                        return '';
-                }
-        }
+function convertObjDataToStr($data)
+{
+   $data = (string)$data;
+   if (!$data) return '';
+   
+   if (mb_detect_encoding($data) == 'cp1251')
+      return Core_Convert::Cp1251ToUtf8($data);
+   
+   return $data;
+}
 
 
 /**

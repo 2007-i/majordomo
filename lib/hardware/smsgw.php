@@ -1,90 +1,87 @@
 <?php
 
- /**
+/**
  * Title
  *
  * Description
  *
  * @access public
  */
-  function sendSMS($phone, $text, $pass_server='000000') {
+function sendSMS($phone, $text, $pass_server='000000')
+{
+   //IP Ð°Ð´Ñ€ÐµÑ
+   $address = gethostbyname('127.0.0.1'); 
+   //ÐŸÐ¾Ñ€Ñ‚
+   $service_port=8000; 
+   // Ð¢ÐµÐ»ÐµÑ„Ð¾Ð½
+   $phone = preg_replace('/^\+/', '', $phone);
+   
+   $socket = socket_create(AF_INET, SOCK_STREAM, 0);
+   if ($socket < 0)
+      echo "socket create failed reason: " . socket_strerror($socket) . "\n";
+   
+   $result = socket_connect ($socket, $address, $service_port);
+   if ($result < 0)
+      echo "socket connect failed.\nReason: ($result) " . socket_strerror($result) . "\n";
+   
+   $text = Core_Convert::Utf8ToCp1251($text);
+   $in = base64_encode($pass_server."#SENDSMS#[TYPE]0[NUMBER]".$phone."[TEXT]".$text); //ÐÐ°ÐÂ¬ÒÐ° Â®Ð²Ð‡Ð°Â ÑžÐ„Ð Ð±Â¬Ð±
+   
+   //$in = base64_encode($pass_server."#CMD#[USSD]*102#"); //ÐÐ°ÐÂ¬ÒÐ° Â§Â Ð‡Ð°Â®Ð±Â  USSD Ð„Â®Â¬Â Â­Â¤Ð»
+   
+   $out = '';
+   
+   socket_write ($socket, $in, strlen($in));
+   $res = '';
+   
+   while ($out = socket_read($socket, 2048))
+      $res .= $out;
+   
+   socket_close ($socket);
+   $res = Core_Convert::Cp1251ToUtf8($res);
+   
+   return $res;
+}
 
-    $address = gethostbyname ('127.0.0.1'); //IP €¤à¥á ¢ è¥£® ª®¬¯ìîâ¥à 
-    $service_port=8000; //®àâ
-    //$pass_server='000000'; // à®«ì
 
-    $phone=preg_replace('/^\+/', '', $phone);
-     
-    $socket = socket_create (AF_INET, SOCK_STREAM, 0);
-    if ($socket < 0) {
-     echo "socket create failed reason: " . socket_strerror ($socket) . "\n";
-    }
-     
-    $result = socket_connect ($socket, $address, $service_port);
-    if ($result < 0) {
-     echo "socket connect failed.\nReason: ($result) " . socket_strerror($result) . "\n";
-    }
+function sendUSD($text, $pass_server='000000')
+{
+   // IP Ð°Ð´Ñ€ÐµÑ
+   $address = gethostbyname('127.0.0.1');
+   // ÐŸÐ¾Ñ€Ñ‚
+   $service_port = 8000; 
+   // Ð¢ÐµÐ»ÐµÑ„Ð¾Ð½
+   $phone = preg_replace('/^\+/', '', $phone);
+   
+   $socket = socket_create (AF_INET, SOCK_STREAM, 0);
+   if ($socket < 0)
+      echo "socket create failed reason: " . socket_strerror ($socket) . "\n";
+   
+   $result = socket_connect ($socket, $address, $service_port);
+   if ($result < 0)
+      echo "socket connect failed.\nReason: ($result) " . socket_strerror($result) . "\n";
+   
+   $text = Core_Convert::Utf8ToCp1251($text);
+   $in = base64_encode($pass_server."#CMD#[USSD]".$text); //ÐÐ°ÐÂ¬ÒÐ° Â®Ð²Ð‡Ð°Â ÑžÐ„Ð Ð±Â¬Ð±
+   
+   //$in = base64_encode($pass_server."#CMD#[USSD]*102#"); //ÐÐ°ÐÂ¬ÒÐ° Â§Â Ð‡Ð°Â®Ð±Â  USSD Ð„Â®Â¬Â Â­Â¤Ð»
+   
+   $out = '';
+   
+   socket_write ($socket, $in, strlen ($in));
+   $res = '';
+   
+   while ($out = socket_read ($socket, 2048))
+      $res.=$out;
+   
+   socket_close ($socket);
 
-    $text = iconv("UTF-8","Windows-1251",$text);
-    $in = base64_encode($pass_server."#SENDSMS#[TYPE]0[NUMBER]".$phone."[TEXT]".$text); //à¨¬¥à ®â¯à ¢ª¨ á¬á
-     
-    //$in = base64_encode($pass_server."#CMD#[USSD]*102#"); //à¨¬¥à § ¯à®á  USSD ª®¬ ­¤ë
-     
-    $out = '';
-     
-    socket_write ($socket, $in, strlen ($in));
-    //echo "Response:\n\n";
-    $res='';
-    while ($out = socket_read ($socket, 2048)) {
-    $res.=$out;
-    }
-    socket_close ($socket);
-    $res = iconv("Windows-1251","UTF-8",$res);
-    return $res;
-
-  }
-
-
-  function sendUSD($text, $pass_server='000000') {
-
-    $address = gethostbyname ('127.0.0.1'); //IP €¤à¥á ¢ è¥£® ª®¬¯ìîâ¥à 
-    $service_port=8000; //®àâ
-    //$pass_server='000000'; // à®«ì
-
-    $phone=preg_replace('/^\+/', '', $phone);
-     
-    $socket = socket_create (AF_INET, SOCK_STREAM, 0);
-    if ($socket < 0) {
-     echo "socket create failed reason: " . socket_strerror ($socket) . "\n";
-    }
-     
-    $result = socket_connect ($socket, $address, $service_port);
-    if ($result < 0) {
-     echo "socket connect failed.\nReason: ($result) " . socket_strerror($result) . "\n";
-    }
-
-    $text = iconv("UTF-8","Windows-1251",$text);
-    $in = base64_encode($pass_server."#CMD#[USSD]".$text); //à¨¬¥à ®â¯à ¢ª¨ á¬á
-     
-    //$in = base64_encode($pass_server."#CMD#[USSD]*102#"); //à¨¬¥à § ¯à®á  USSD ª®¬ ­¤ë
-     
-    $out = '';
-     
-    socket_write ($socket, $in, strlen ($in));
-    //echo "Response:\n\n";
-    $res='';
-    while ($out = socket_read ($socket, 2048)) {
-    $res.=$out;
-    }
-    socket_close ($socket);
-
-    $res = iconv("Windows-1251","UTF-8",$res);
-    if (preg_match('/USSD-RESPONSE\[.+?\]:(.+)/is', $res, $m)) {
-     $res=$m[1];
-    }
-    return $res;
-
-  }
-     
+   $res = Core_Convert::Cp1251ToUtf8($res);
+   
+   if (preg_match('/USSD-RESPONSE\[.+?\]:(.+)/is', $res, $m)) 
+      $res = $m[1];
+   
+   return $res;
+}
 
 ?>

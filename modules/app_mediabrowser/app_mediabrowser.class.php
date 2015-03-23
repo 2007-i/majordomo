@@ -301,12 +301,15 @@ function usual(&$out) {
 
   $act_dir=$path.$folder;
 
-  if($act_dir{0}=='/'){
+  if($act_dir{0} == '/')
+  {
       $out['MEDIA_PATH']=$path;
       $out['CURRENT_DIR']='./'.$folder;
-  } else {
-      $out['MEDIA_PATH']=win2utf($path);
-      $out['CURRENT_DIR']=win2utf('./'.$folder);
+  }
+  else
+  {
+      $out['MEDIA_PATH'] = Core_Convert::Cp1251ToUtf8($path);
+      $out['CURRENT_DIR']= './'. Core_Convert::Cp1251ToUtf8($folder);
   }
 
 
@@ -351,40 +354,46 @@ function usual(&$out) {
   }
 
   global $file;
-  if ($file) {
-
-      if($run_linux){
-          $out['FILE']=$file;
-          $out['BASEFILE']=basename($file);
-          $file=str_replace('/', '\\\\', $file);
-          $out['FULLFILE']=addslashes($path).$file;
-      } else {
-          $out['FILE']=win2utf($file);
-          $out['BASEFILE']=win2utf(basename($file));
-          $file=str_replace('/', '\\\\', $file);
-          $out['FULLFILE']=win2utf(addslashes($path).$file);
-      }
+  if ($file)
+  {
+   if($run_linux)
+   {
+      $out['FILE'] = $file;
+      $out['BASEFILE'] = basename($file);
+      $file = str_replace('/', '\\\\', $file);
+      $out['FULLFILE'] = addslashes($path) . $file;
+   }
+   else
+   {
+      $out['FILE'] = Core_Convert::Cp1251ToUtf8($file);
+      $out['BASEFILE'] = Core_Convert::Cp1251ToUtf8(basename($file));
+      $file=str_replace('/', '\\\\', $file);
+      $out['FULLFILE'] = Core_Convert::Cp1251ToUtf8(addslashes($path) . $file);
+   }
 
    $out['FULLFILE_S']=str_replace('\\\\', '\\', $out['FULLFILE']);
 
-   if ($this->mode=='play') {
-    //FULLFILE_S
-    $rec=array();
-    $rec['TITLE']=$out['CURRENT_DIR_TITLE'];
-    $rec['PATH']=win2utf($folder);
-    $rec['LIST_ID']=(int)$list_id;
-    $rec['COLLECTION_ID']=$collection_id;
-    $rec['PLAYED']=date('Y-m-d H:i:s');
-    SQLExec("DELETE FROM media_history WHERE PATH LIKE '".DBSafe($rec['PATH'])."'");
-    SQLInsert('media_history', $rec);
+   if ($this->mode=='play')
+   {
+      //FULLFILE_S
+      $rec=array();
+      $rec['TITLE']=$out['CURRENT_DIR_TITLE'];
+      $rec['PATH'] =  Core_Convert::Cp1251ToUtf8($folder);
+      $rec['LIST_ID']=(int)$list_id;
+      $rec['COLLECTION_ID']=$collection_id;
+      $rec['PLAYED']=date('Y-m-d H:i:s');
+      SQLExec("DELETE FROM media_history WHERE PATH LIKE '".DBSafe($rec['PATH'])."'");
+      SQLInsert('media_history', $rec);
 
-    $last10=SQLSelect("SELECT ID FROM media_history ORDER BY PLAYED DESC LIMIT 10");
-    $total=count($last10);
-    $ids=array();
-    for($i=0;$i<$total;$i++) {
-     $ids[]=$last10[$i]['ID'];
-    }
-    SQLExec("DELETE FROM media_history WHERE ID NOT IN (".implode(',', $ids).")");
+      $last10=SQLSelect("SELECT ID FROM media_history ORDER BY PLAYED DESC LIMIT 10");
+      $total=count($last10);
+      $ids=array();
+      for($i=0;$i<$total;$i++)
+      {
+         $ids[]=$last10[$i]['ID'];
+      }
+   
+      SQLExec("DELETE FROM media_history WHERE ID NOT IN (".implode(',', $ids).")");
 
    }
 
@@ -461,8 +470,8 @@ function usual(&$out) {
         $rec['TITLE']=$rec['TITLE'];
         $rec['TITLE_SHORT']=$rec['TITLE_SHORT'];
     } else {
-        $rec['TITLE']=win2utf($rec['TITLE']);
-        $rec['TITLE_SHORT']=win2utf($rec['TITLE_SHORT']);
+        $rec['TITLE'] = Core_Convert::Cp1251ToUtf8($rec['TITLE']);
+        $rec['TITLE_SHORT'] = Core_Convert::Cp1251ToUtf8($rec['TITLE_SHORT']);
     }
 
 
@@ -521,8 +530,8 @@ function usual(&$out) {
         $rec['TITLE']=$rec['TITLE'];
         $rec['TITLE_SHORT']=$rec['TITLE_SHORT'];
     } else {
-        $rec['TITLE']=win2utf($rec['TITLE']);
-        $rec['TITLE_SHORT']=win2utf($rec['TITLE_SHORT']);
+        $rec['TITLE'] = Core_Convert::Cp1251ToUtf8($rec['TITLE']);
+        $rec['TITLE_SHORT'] = Core_Convert::Cp1251ToUtf8($rec['TITLE_SHORT']);
     }
 
     $rec['REAL_PATH']=($folder.$file);
