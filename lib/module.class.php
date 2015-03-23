@@ -126,37 +126,37 @@ Define("EQ_DELIMITER", "qz_");
 * @access private
 * @return string current module params query string
 */
-  function createParamsString($data, $name) {
-   $params="";
-   foreach($data as $k=>$v) {
-    if ($v=="") {
-     UnSet($data[$k]);
-    } else {
-     $params.="m".STRING_DELIMITER.$name.STRING_DELIMITER.$k.EQ_DELIMITER.$v.PARAMS_DELIMITER;
-     $params1[]="$k=$v";
-    }
+function createParamsString($data, $name)
+{
+   $params = "";
+   
+   foreach($data as $k=>$v)
+   {
+      if ($v == "")
+      {
+         UnSet($data[$k]);
+      } 
+      else
+      {
+         $params .= "m" . STRING_DELIMITER . $name . STRING_DELIMITER . $k . EQ_DELIMITER . $v . PARAMS_DELIMITER;
+         $params1[] = "$k=$v";
+      }
    }
-   //echo $params."<br>";
-   //$params=toXML($data);
-   //$params=serialize($data);
-   if (count($params1)) {
-    $params="$name:{".implode(",", $params1)."}";
-    //echo $params."<br>";
-    $params=urlencode(base64_encode($params));
-   } else {
-    $params="";
-    //echo "-<br>";
+
+   if (isset($params1))
+   {
+      $params = "$name:{" . implode(",", $params1) . "}";
+      $params = urlencode(base64_encode($params));
    }
-   /*
-   if (count($data)>0) {
-    $temp[$this->name]=$data;
-    $xml=new xml_data($temp);
-    $res=$xml->string;
+   else
+   {
+      $params = "";
    }
-   */
-   $res=$params;
+   
+   $res = $params;
    return $res;
-  }
+}
+
 // --------------------------------------------------------------------
 /**
 * Restoring module data from query string
@@ -633,112 +633,129 @@ Define("EQ_DELIMITER", "qz_");
 *
 * @access private
 */
- function parseLinks($result) {
+function parseLinks($result)
+{
    global $PHP_SELF;
    global $md;
 
-   if (!IsSet($_SERVER['PHP_SELF'])) {
-    $_SERVER['PHP_SELF']=$PHP_SELF;
-   }
-
-   if ($md!=$this->name) {
-    $param_str=$this->saveParams();
-   } elseif (IsSet($this->owner)) {
-    $param_str=$this->owner->saveParams();
-   }
+   if (!IsSet($_SERVER['PHP_SELF']))
+      $_SERVER['PHP_SELF'] = $PHP_SELF;
+   
+   $param_str = "";
+   
+   if ($md != $this->name)
+      $param_str = $this->saveParams();
+   elseif (IsSet($this->owner))
+      $param_str = $this->owner->saveParams();
 
    // a href links like <a href="?param=value">
-   if ((preg_match_all('/="\?(.*?)"/is', $result, $matches, PREG_PATTERN_ORDER))) {
-    for($i=0;$i<count($matches[1]);$i++) {
-     $link=$matches[1][$i];
-     if (!Is_Integer(strpos($link, '<!-- modified -->'))) { // skip custom links
-      if (preg_match('/^\((.+?)\)(.*)$/', $link, $matches1)) {
-       $other=$matches1[2];
-       $res_str=$this->codeParams($matches1[1]);
-       $result=str_replace($matches[0][$i], '="'.$_SERVER['PHP_SELF'].'?pd='.$res_str.$other.'"', $result);      
-      } elseif (strpos($link, "md=")!==0) {
-       $result=str_replace($matches[0][$i], '="'.$_SERVER['PHP_SELF'].'?pd='.$param_str.'&md='.$this->name.'&inst='.$this->instance.'&'.$link.'"', $result); // links
-      } else {
-       $result=str_replace('action="?', 'action="'.$_SERVER['PHP_SELF'].'"', $result); // forms
-      }
-     } else {
-      // remove modified param
-      $link=str_replace('<!-- modified -->', '', $link);      
-      $result=str_replace($matches[0][$i], '="'.$link.'"', $result);      
-     }
-    }
-   }
-
-   // form hidden params
-   if (preg_match_all('/\<input([^\<\>]+?)(value="\((.*?)\)")([^\<\>]*?)\>/is', $result, $matches, PREG_PATTERN_ORDER)) {
-      for($i=0;$i<count($matches[3]);$i++) {
-         if (strpos($matches[1][$i], 'type="hidden"') !== false || strpos($matches[4][$i], 'type="hidden"') !== false) {
-            $res_str=$this->codeParams($matches[3][$i]);
-            $result=str_replace($matches[2][$i], 'value="'.$res_str.'"', $result);
+   if ((preg_match_all('/="\?(.*?)"/is', $result, $matches, PREG_PATTERN_ORDER)))
+   {
+      for($i = 0; $i < count($matches[1]); $i++)
+      {
+         $link=$matches[1][$i];
+         if (!Is_Integer(strpos($link, '<!-- modified -->'))) // skip custom links
+         {
+            if (preg_match('/^\((.+?)\)(.*)$/', $link, $matches1))
+            {
+               $other = $matches1[2];
+               $res_str = $this->codeParams($matches1[1]);
+               $result = str_replace($matches[0][$i], '="' . $_SERVER['PHP_SELF'] . '?pd=' . $res_str . $other . '"', $result);
+            } 
+            elseif (strpos($link, "md=") !== 0)
+            {
+               // links
+               $result = str_replace($matches[0][$i], '="' . $_SERVER['PHP_SELF'] . '?pd=' . $param_str . '&md=' . $this->name . '&inst=' . $this->instance . '&' . $link . '"', $result);
+            }
+            else
+            {
+               // forms
+               $result = str_replace('action="?', 'action="' . $_SERVER['PHP_SELF'] . '"', $result);
+            }
+         }
+         else
+         {
+            // remove modified param
+            $link = str_replace('<!-- modified -->', '', $link);
+            $result = str_replace($matches[0][$i], '="' . $link . '"', $result);
          }
       }
    }
 
    // form hidden params
-   /*
-   if (preg_match_all('/value="\((.*?)\)"/is', $result, $matches, PREG_PATTERN_ORDER)) {
-    for($i=0;$i<count($matches[1]);$i++) {   
-      $res_str=$this->codeParams($matches[1][$i]);
-      $result=str_replace($matches[0][$i], 'value="'.$res_str.'"', $result);      
-    }
+   if (preg_match_all('/\<input([^\<\>]+?)(value="\((.*?)\)")([^\<\>]*?)\>/is', $result, $matches, PREG_PATTERN_ORDER))
+   {
+      for($i=0;$i<count($matches[3]);$i++)
+      {
+         if (strpos($matches[1][$i], 'type="hidden"') !== false || strpos($matches[4][$i], 'type="hidden"') !== false)
+         {
+            $res_str = $this->codeParams($matches[3][$i]);
+            $result = str_replace($matches[2][$i], 'value="' . $res_str . '"', $result);
+         }
+      }
    }
-   */
 
    // [#link ...#]
-   if (preg_match_all('/\[#link (.*?)#\]/is', $result, $matches, PREG_PATTERN_ORDER)) {
-    for($i=0;$i<count($matches[1]);$i++) {
-     $link=$matches[1][$i];
-     if (preg_match('/^\((.+?)\)(.*)$/', $link, $matches1)) {
-      $other=$matches1[2];
-      $res_str=$this->codeParams($matches1[1]);
-      $result=str_replace($matches[0][$i], $_SERVER['PHP_SELF'].'?pd='.$res_str.$other, $result);      
-     } elseif (strpos($link, "md=")!==0) {
-      $result=str_replace($matches[0][$i], $_SERVER['PHP_SELF'].'?pd='.$param_str.'&md='.$this->name.'&inst='.$this->instance.'&'.$link, $result); // links
-     }
-    }
+   if (preg_match_all('/\[#link (.*?)#\]/is', $result, $matches, PREG_PATTERN_ORDER))
+   {
+      for($i = 0; $i < count($matches[1]); $i++)
+      {
+         $link=$matches[1][$i];
+         if (preg_match('/^\((.+?)\)(.*)$/', $link, $matches1))
+         {
+            $other = $matches1[2];
+            $res_str = $this->codeParams($matches1[1]);
+            $result = str_replace($matches[0][$i], $_SERVER['PHP_SELF'] . '?pd=' . $res_str.$other, $result);
+         } 
+         elseif (strpos($link, "md=") !== 0)
+         {
+            // links
+            $result = str_replace($matches[0][$i], $_SERVER['PHP_SELF'] . '?pd=' . $param_str . '&md=' . $this->name . '&inst=' . $this->instance . '&' . $link, $result);
+         }
+      }
    }
 
-
    // form hidden variables (exclude </form><!-- modified -->)
-   $result=preg_replace("/<\/form>(?!<!-- modified -->)/is", "<input type=\"hidden\" name=\"pd\" value=\"$param_str\">\n<input type=\"hidden\" name=\"md\" value=\"".$this->name."\">\n<input type=\"hidden\" name=\"inst\" value=\"".$this->instance."\">\n</FORM><!-- modified -->", $result); // forms
+   // forms
+   $result = preg_replace("/<\/form>(?!<!-- modified -->)/is", "<input type=\"hidden\" name=\"pd\" value=\"". $param_str . "\">\n<input type=\"hidden\" name=\"md\" value=\"" . $this->name . "\">\n<input type=\"hidden\" name=\"inst\" value=\"" . $this->instance . "\">\n</FORM><!-- modified -->", $result);
+
    return $result;
+}
 
- }
-
-// --------------------------------------------------------------------
-/**
-* Parsing params in coded string
-*
-* Used to maintain framework structure by saving modules data
-* in query strings and hidden fields
-*
-* @access private
-*/
- function codeParams($in) {
-
-      if (preg_match_all('/(.+?):{(.+?)}/', $in, $matches2, PREG_PATTERN_ORDER)) {
-       for($k=0;$k<count($matches2);$k++) {
-        $data=array();
-        $module_name=$matches2[1][$k];
-        $module_params=explode(',',$matches2[2][$k]);
-        for($m=0;$m<count($module_params);$m++) {
-         $ar=explode("=", trim($module_params[$m]));
-         $data[trim($ar[0])]=trim($ar[1]);
-        }
-        $res_str.=$this->createParamsString($data, $module_name).PARAMS_DELIMITER;
-       }
+   /**
+   * Parsing params in coded string
+   *
+   * Used to maintain framework structure by saving modules data
+   * in query strings and hidden fields
+   *
+   * @access private
+   */
+   function codeParams($in)
+   {
+      $res_str = "";
+      if (preg_match_all('/(.+?):{(.+?)}/', $in, $matches2, PREG_PATTERN_ORDER))
+      {
+         $cntMatches = count($matches2);
+         for($k = 0; $k < $cntMatches; $k++)
+         {
+            $data = array();
+            $module_name = isset($matches2[1][$k]) ? $matches2[1][$k] : "";
+            $module_params = isset($matches2[2][$k]) ? explode(',',$matches2[2][$k]) : "";
+         
+            if (is_array($module_params))
+            {
+               $cntModuleParams = count($module_params);
+               for($m = 0; $m < $cntModuleParams; $m++)
+               {
+                  $ar = explode("=", trim($module_params[$m]));
+                  $data[trim($ar[0])] = trim($ar[1]);
+               }
+            }
+            $res_str .= $this->createParamsString($data, $module_name) . PARAMS_DELIMITER;
+         }
       }
 
       return $res_str;
-
- }
-
-
-
- }
+   }
+}
 ?>

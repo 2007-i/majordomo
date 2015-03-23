@@ -13,7 +13,7 @@
 if (!preg_match('/\/$/', $_SERVER["REQUEST_URI"])) 
    $file = basename($_SERVER["REQUEST_URI"]);
 
-$ext=strtolower(substr($file, -3));
+$ext = strtolower(substr($file, -3));
 
 if ($ext == 'jpg' || $ext == 'gif' || $ext == 'css') 
 {
@@ -22,13 +22,11 @@ if ($ext == 'jpg' || $ext == 'gif' || $ext == 'css')
 }
 
 if (preg_match("/\?(.*?)$/", $_SERVER["REQUEST_URI"], $matches)) 
-{
-   $redir_qry=$matches[1];
-}
+   $redir_qry = $matches[1];
 
 $file = preg_replace("/\.htm.*$/","", $file);
 
-if ($file!='') $fake_doc=$file;
+if ($file != '') $fake_doc = $file;
 
 include_once("./config.php");
 
@@ -67,10 +65,11 @@ $requests = array(
 
 foreach($requests as $key=>$value) 
 {
-   if (!$found && preg_match($key, $_SERVER["REQUEST_URI"], $matches)) 
+   if (!isset($found) && preg_match($key, $_SERVER["REQUEST_URI"], $matches)) 
    {
       $link = $value;
-      for($i = 1; $i < count($matches); $i++) 
+      $cntMatches = count($matches);
+      for($i = 1; $i < $cntMatches; $i++) 
       {
          $link = str_replace("\\$i", $matches[$i], $link);
       }
@@ -79,6 +78,8 @@ foreach($requests as $key=>$value)
       $found = 1;
    }
 }
+
+$link = isset($link) ? $link : "";
 
 if (preg_match('/^moved:(.+)/is', $link, $matches)) 
 {
@@ -90,22 +91,26 @@ if (preg_match('/^moved:(.+)/is', $link, $matches))
 include_once("./config.php");
 include_once("./lib/loader.php");
 
-if ($link!='') 
+if ($link != '') 
 {
    $mdl       = new module();
-   $param_str = $mdl->parseLinks("<a href=\"$link\">");
+   $param_str = $mdl->parseLinks("<a href=\"". $link. "\">");
  
-   if (preg_match("/<a href=\".+?\?pd=(.*?)&(.+)\">/", $param_str, $matches)){
-    $pd = $matches[1];
-    $other=$matches[2];
-    $tmp=explode('&', $other);
-    foreach($tmp as $pair) {
-     $tmp2=explode('=', $pair);
-     $_GET[$tmp2[0]]=$tmp2[1];
-     ${$tmp2[0]}=$tmp2[1];
-    }
-   } elseif (preg_match("/<a href=\".+?\?pd=(.*?)\">/", $param_str, $matches)){
-    $pd = $matches[1];
+   if (preg_match("/<a href=\".+?\?pd=(.*?)&(.+)\">/", $param_str, $matches))
+   {
+      $pd = $matches[1];
+      $other = $matches[2];
+      $tmp = explode('&', $other);
+      foreach($tmp as $pair)
+      {
+         $tmp2 = explode('=', $pair);
+         $_GET[$tmp2[0]] = $tmp2[1];
+         ${$tmp2[0]} = $tmp2[1];
+      }
+   }
+   elseif (preg_match("/<a href=\".+?\?pd=(.*?)\">/", $param_str, $matches))
+   {
+      $pd = $matches[1];
    }
 } 
 else 
@@ -115,11 +120,9 @@ else
    exit;
 }
 
-if (preg_match('/^\/panel\//is', $_SERVER['REQUEST_URI'])) {
- include_once("admin.php");
-} else {
- include_once("index.php");
-}
-
+if (preg_match('/^\/panel\//is', $_SERVER['REQUEST_URI']))
+   include_once("admin.php");
+else
+   include_once("index.php");
 
 ?>
