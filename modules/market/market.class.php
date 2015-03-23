@@ -245,43 +245,44 @@ function getLatest(&$out, $url, $name, $version) {
    }
   }
 
- function upload(&$out) {
-
-  set_time_limit(0);
-  global $restore;
-  global $file;
-  global $file_name;
-  global $folder;
+function upload(&$out)
+{
+   set_time_limit(0);
+   global $restore;
+   global $file;
+   global $file_name;
+   global $folder;
 
    if (!$folder)
       $folder = IsWindowsOS() ? '/.' : '/';
    else
       $folder = '/' . $folder;
+   
+   if ($restore != '')
+   {
+      $file = $restore;
+   } 
+   elseif ($file!='')
+   {
+      copy($file, ROOT.'saverestore/' . $file_name);
+      $file = $file_name;
+   }
 
+   umask(0);
+   @mkdir(ROOT.'saverestore/temp', 0777);
 
-  if ($restore!='') {
-   $file=$restore;
-  } elseif ($file!='') {
-   copy($file, ROOT.'saverestore/'.$file_name);
-   $file=$file_name;
-  }
-
-  umask(0);
-  @mkdir(ROOT.'saverestore/temp', 0777);
-
-  if ($file!='') { // && mkdir(ROOT.'saverestore/temp', 0777)
-
-       chdir(ROOT.'saverestore/temp');
+   if ($file != '') { // && mkdir(ROOT.'saverestore/temp', 0777)
+      chdir(ROOT.'saverestore/temp');
 
       if (IsWindowsOS())
       {
          // for windows only
          exec(DOC_ROOT.'/gunzip ../'.$file, $output, $res);
          exec(DOC_ROOT.'/tar xvf ../'.str_replace('.tgz', '.tar', $file), $output, $res);
-      }
+      } 
       else
       {
-         exec('tar xzvf ../'.$file, $output, $res);
+         exec('tar xzvf ../' . $file, $output, $res);
       }
 
         $x = 0;

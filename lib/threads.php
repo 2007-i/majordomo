@@ -44,15 +44,15 @@ class Threads {
         return $this->lastId;
     }
 
-   public function newXThread($filename, $display='101', $params=array()) 
+   public function newXThread($filename, $display='101', $params=array())
    {
       /*
        * Функция создает поток на отдельном экране в LINUX.
        */
-      if (IsWindowsOS()) 
+      if (IsWindowsOS())
          throw new ThreadsException('FOR_LINUX_ONLY');
-        
-      if (!file_exists($filename)) 
+      
+      if (!file_exists($filename))
          throw new ThreadsException('FILE_NOT_FOUND');
         
       $params = addcslashes(serialize($params), '"');

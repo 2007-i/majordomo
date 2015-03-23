@@ -43,97 +43,97 @@ class phpSerial
    {
       setlocale(LC_ALL, "en_US");
 
-      if (!IsWindowsOS())
-      {
-         $this->_os = "linux";
+		$isWindows = IsWindowsOS();
+		if (!$isWindows)
+		{
+			$this->_os = "linux";
 
-         if($this->_exec("stty --version") === 0)
-         {
-            register_shutdown_function(array($this, "deviceClose"));
-         }
-         else
-         {
-            trigger_error("No stty availible, unable to run.", E_USER_ERROR);
-         }
-      }
-      elseif(IsWindowsOS())
-      {
-         $this->_os = "windows";
-         register_shutdown_function(array($this, "deviceClose"));
-      }
-      else
-      {
-         trigger_error("Host OS is neither linux nor windows, unable tu run.", E_USER_ERROR);
-         exit();
-      }
-   }
+			if($this->_exec("stty --version") === 0)
+			{
+				register_shutdown_function(array($this, "deviceClose"));
+			}
+			else
+			{
+				trigger_error("No stty availible, unable to run.", E_USER_ERROR);
+			}
+		}
+		elseif($isWindows)
+		{
+			$this->_os = "windows";
+			register_shutdown_function(array($this, "deviceClose"));
+		}
+		else
+		{
+			trigger_error("Host OS is neither linux nor windows, unable tu run.", E_USER_ERROR);
+			exit();
+		}
+	}
 
-   //
-   // OPEN/CLOSE DEVICE SECTION -- {START}
-   //
+	//
+	// OPEN/CLOSE DEVICE SECTION -- {START}
+	//
 
-   /**
-    * Device set function : used to set the device name/address.
-    * -> linux : use the device address, like /dev/ttyS0
-    * -> windows : use the COMxx device name, like COM1 (can also be used
-    *     with linux)
-    *
-    * @param string $device the name of the device to be used
-    * @return bool
-    */
-   function deviceSet ($device)
-   {
-      if ($this->_dState !== SERIAL_DEVICE_OPENED)
-      {
-         if ($this->_os === "linux")
-         {
-            if (preg_match("@^COM(\d+):?$@i", $device, $matches))
-            {
-               $device = "/dev/ttyS" . ($matches[1] - 1);
-            }
+	/**
+	 * Device set function : used to set the device name/address.
+	 * -> linux : use the device address, like /dev/ttyS0
+	 * -> windows : use the COMxx device name, like COM1 (can also be used
+	 *     with linux)
+	 *
+	 * @param string $device the name of the device to be used
+	 * @return bool
+	 */
+	function deviceSet ($device)
+	{
+		if ($this->_dState !== SERIAL_DEVICE_OPENED)
+		{
+			if ($this->_os === "linux")
+			{
+				if (preg_match("@^COM(\d+):?$@i", $device, $matches))
+				{
+					$device = "/dev/ttyS" . ($matches[1] - 1);
+				}
 
-            if ($this->_exec("stty -F " . $device) === 0)
-            {
-               $this->_device = $device;
-               $this->_dState = SERIAL_DEVICE_SET;
-               return true;
-            }
-         }
-         elseif ($this->_os === "windows")
-         {
-            if (preg_match("@^COM(\d+):?$@i", $device, $matches) and $this->_exec(exec("mode " . $device)) === 0)
-            {
-               $this->_windevice = "COM" . $matches[1];
-               $this->_device    = "\\.\com" . $matches[1];
-               $this->_dState    = SERIAL_DEVICE_SET;
-               
-               return true;
-            }
-         }
+				if ($this->_exec("stty -F " . $device) === 0)
+				{
+					$this->_device = $device;
+					$this->_dState = SERIAL_DEVICE_SET;
+					return true;
+				}
+			}
+			elseif ($this->_os === "windows")
+			{
+				if (preg_match("@^COM(\d+):?$@i", $device, $matches) and $this->_exec(exec("mode " . $device)) === 0)
+				{
+					$this->_windevice = "COM" . $matches[1];
+					$this->_device    = "\\.\com" . $matches[1];
+					$this->_dState    = SERIAL_DEVICE_SET;
+					return true;
+				}
+			}
 
-         trigger_error("Specified serial port is not valid", E_USER_WARNING);
-         return false;
-      }
-      else
-      {
-         trigger_error("You must close your device before to set an other one", E_USER_WARNING);
-         return false;
-      }
-   }
+			trigger_error("Specified serial port is not valid", E_USER_WARNING);
+			return false;
+		}
+		else
+		{
+			trigger_error("You must close your device before to set an other one", E_USER_WARNING);
+			return false;
+		}
+	}
 
-   /**
-    * Opens the device for reading and/or writing.
-    *
-    * @param string $mode Opening mode : same parameter as fopen()
-    * @return bool
-    */
-   function deviceOpen ($mode = "r+b")
-   {
-      if ($this->_dState === SERIAL_DEVICE_OPENED)
-      {
-         trigger_error("The device is already opened", E_USER_NOTICE);
-         return true;
-      }
+	/**
+	 * Opens the device for reading and/or writing.
+	 *
+	 * @param string $mode Opening mode : same parameter as fopen()
+	 * @return bool
+	 */
+	function deviceOpen ($mode = "r+b")
+	{
+		if ($this->_dState === SERIAL_DEVICE_OPENED)
+		{
+			trigger_error("The device is already opened", E_USER_NOTICE);
+			return true;
+		}
 
       if ($this->_dState === SERIAL_DEVICE_NOTSET)
       {

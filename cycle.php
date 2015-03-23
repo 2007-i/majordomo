@@ -68,6 +68,8 @@ $threads->phpPath = IsWindowsOS() ? '..\server\php\php.exe' : 'php';
 
 if (defined('PATH_TO_PHP'))
    $threads->phpPath = PATH_TO_PHP;
+else
+   $threads->phpPath = IsWindowsOS() ? '..\server\php\php.exe' : 'php';
 
 foreach($cycles as $path) 
 {

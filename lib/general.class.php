@@ -528,16 +528,15 @@ function clearCache($verbose=0) {
   }
  }
 
-   function ping($host)
-   {
-      $curHost = escapeshellarg($host);
-      if (IsWindowsOS())
-         exec(sprintf('ping -n 1 %s', $curHost), $res, $rval);
-      else
-         exec(sprintf('ping -c 1 -W 5 %s', $curHost), $res, $rval);
-     
-      return $rval === 0 && preg_match('/ttl/is', join('', $res));
-   }
+function ping($host)
+{
+   if (IsWindowsOS())
+      exec(sprintf('ping -n 1 %s', escapeshellarg($host)), $res, $rval);
+   else
+      exec(sprintf('ping -c 1 -W 5 %s', escapeshellarg($host)), $res, $rval);
+   
+   return $rval === 0 && preg_match('/ttl/is', join('', $res));
+}
 
  function transliterate($string) {
     $converter = array(
