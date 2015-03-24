@@ -127,21 +127,25 @@ if (get_magic_quotes_gpc())
 /**
 * Loads file
 *
-*
 * @param string File name
-* @return file content
+* @return string content
 * @access public
 */
-function LoadFile($filename) {
- // loading file
- $f=fopen("$filename", "r");
- $data="";
- $fsize=filesize($filename);
- if ($f && $fsize>0) {
-  $data=fread($f, $fsize);
-  fclose($f);
- }
- return $data;
+function LoadFile($filename)
+{
+   $data = "";
+   
+   $f = fopen($filename, "rb");
+   if (!$f) return $data;
+   
+   $fsize = filesize($filename);
+   
+   if ($fsize > 0)
+      $data = fread($f, $fsize);
+
+   fclose($f);
+   
+   return $data;
 }
 
 /**
