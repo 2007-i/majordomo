@@ -87,6 +87,13 @@ if ($argv[1]!='')
    }
 }
 
+
+ if (preg_match('/\/\?(\w+)\.(\w+)/', $_SERVER['REQUEST_URI'], $matches)) {
+  $_GET['op']='m';
+  $_GET['object']=$matches[1];
+  $_GET['m']=$matches[2];
+ }
+
  foreach($_GET as $k=>$v) {
   $request.='&'.$k.'='.$v;
  }
@@ -100,6 +107,7 @@ if ($argv[1]!='')
  if (!$commandLine) {
   header ('Content-Type: text/html; charset=utf-8');
  }
+
  //echo "\nRequest: ".$request;
  //exit;
 
@@ -139,9 +147,11 @@ if ($argv[1]!='')
                    $success=eval($code);
                    if ($success===false) {
                     DebMes("Error in scheduled job code: ".$code);
+                    registerError('scheduled_jobs', "Error in scheduled job code: ".$code);
                    }
                   } catch(Exception $e){
                    DebMes('Error: exception '.get_class($e).', '.$e->getMessage().'.');
+                   registerError('scheduled_jobs', get_class($e).', '.$e->getMessage());
                   }
                   echo "OK";
   }
