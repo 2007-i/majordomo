@@ -1002,7 +1002,6 @@ $dictionary=array(
 'CLEAR_FAVORITES'=>'Очистить Избранное',
 'CLEAR_HISTORY'=>'Очистить Недавно проигранное',
 
-
 'TEST'=>'test'
 
 
