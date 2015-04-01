@@ -25,51 +25,52 @@ class Threads {
         
         $params = addcslashes(serialize($params), '"');
 
-        if (defined('LOG_CYCLES') && LOG_CYCLES=='1') {
+        //if (defined('LOG_CYCLES') && LOG_CYCLES=='1') {
          $command = $this->phpPath.' -q '.$filename.' --params "'.$params.'">>'.DOC_ROOT.'/debmes/log_'.date('Y-m-d').'-'.basename($filename).'.txt';
-        } else {
+        /*} else {
          $command = $this->phpPath.' -q '.$filename.' --params "'.$params.'"';
         }
-        ++$this->lastId;
-
-        $this->commandLines[$this->lastId] = $command;        
-        $this->handles[$this->lastId] = proc_open($command, $this->descriptorSpec, $pipes);
-        stream_set_blocking($pipes[0], 0);
-        stream_set_blocking($pipes[1], 0);
-        stream_set_timeout($pipes[0], $this->timeout);
-        stream_set_timeout($pipes[1], $this->timeout);
-        $this->streams[$this->lastId] = $pipes[1];
-        $this->pipes[$this->lastId] = $pipes;
-        
-        return $this->lastId;
-    }
-
-    public function newXThread($filename, $display='101', $params=array()) {
-        /*
-        Функция создает поток на отдельном экране в LINUX.
         */
-        if (!(substr(php_uname(), 0, 5) == "Linux")) {
-            throw new ThreadsException('FOR_LINUX_ONLY');
-        }
-        if (!file_exists($filename)) {
-            throw new ThreadsException('FILE_NOT_FOUND');
-        }
-        
-        $params = addcslashes(serialize($params), '"');
-        $command = 'DISPLAY=:'.$display.' '.$this->phpPath.' '.$filename.' --params "'.$params.'"';
         ++$this->lastId;
 
         $this->commandLines[$this->lastId] = $command;        
         $this->handles[$this->lastId] = proc_open($command, $this->descriptorSpec, $pipes);
-        stream_set_timeout($pipes[0], $this->timeout);
-        stream_set_timeout($pipes[1], $this->timeout);
         stream_set_blocking($pipes[0], 0);
         stream_set_blocking($pipes[1], 0);
+        stream_set_timeout($pipes[0], $this->timeout);
+        stream_set_timeout($pipes[1], $this->timeout);
         $this->streams[$this->lastId] = $pipes[1];
         $this->pipes[$this->lastId] = $pipes;
         
         return $this->lastId;
     }
+
+   public function newXThread($filename, $display='101', $params=array())
+   {
+      /*
+        Функция создает поток на отдельном экране в LINUX.
+      */
+      if (IsWindowsOS())
+         throw new ThreadsException('FOR_LINUX_ONLY');
+      
+      if (!file_exists($filename))
+         throw new ThreadsException('FILE_NOT_FOUND');
+        
+      $params = addcslashes(serialize($params), '"');
+      $command = 'DISPLAY=:'.$display.' '.$this->phpPath.' '.$filename.' --params "'.$params.'"';
+      ++$this->lastId;
+
+      $this->commandLines[$this->lastId] = $command;        
+      $this->handles[$this->lastId] = proc_open($command, $this->descriptorSpec, $pipes);
+      stream_set_timeout($pipes[0], $this->timeout);
+      stream_set_timeout($pipes[1], $this->timeout);
+      stream_set_blocking($pipes[0], 0);
+      stream_set_blocking($pipes[1], 0);
+      $this->streams[$this->lastId] = $pipes[1];
+      $this->pipes[$this->lastId] = $pipes;
+        
+      return $this->lastId;
+   }
 
     public function getPipes() {
      return $this->pipes;

@@ -107,7 +107,11 @@ if (IsSet($_REQUEST['latitude']))
    }
 
    $rec=array();
-   $rec['ADDED']     = date('Y-m-d H:i:s');
+   if ($time) {
+    $rec['ADDED']     = $time;
+   } else {
+    $rec['ADDED']     = date('Y-m-d H:i:s');
+   }
    $rec['LAT']       = $_REQUEST['latitude'];
    $rec['LON']       = $_REQUEST['longitude'];
    $rec['ALT']       = round($_REQUEST['altitude'], 2);
@@ -203,9 +207,11 @@ if (IsSet($_REQUEST['latitude']))
                    $success=eval($code);
                    if ($success===false) {
                     DebMes("Error in GPS action code: ".$code);
+                    registerError('gps_action', "Code execution error: ".$code);
                    }
                   } catch(Exception $e){
                    DebMes('Error: exception '.get_class($e).', '.$e->getMessage().'.');
+                   registerError('gps_action', get_class($e).', '.$e->getMessage());
                   }
                }
             }
