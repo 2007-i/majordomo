@@ -15,7 +15,7 @@ class session
     * @var string Session data
     */
    var $data; // session data
-
+   
    /**
     * @var string Session name
     */
@@ -40,14 +40,15 @@ class session
          @session_start();
 
          // setting expiration time for session (the easiest way)
-         $expiretime = 60*60*1; // 2 hours
+         $expireTime = 60*60*1; // 1 hours
          if (isset($_SESSION['expire']) && $_SESSION['expire'] < time())
             $_SESSION['DATA'] = '';
     
-         $_SESSION['expire'] = time() + $expiretime;
+         $_SESSION['expire'] = time() + $expireTime;
 
          $this->data = unserialize($_SESSION['DATA']);
          $this->started = 1;
+    
          Define("SESSION_ID", session_name() . "=" . session_id());
          Define("SID", session_name() . "=" . session_id());
       }
@@ -64,7 +65,7 @@ class session
       if ($this->started)
          $_SESSION['DATA'] = serialize($this->data); 
    }
-   
+
    /**
     * Closing current session
     *
@@ -82,8 +83,9 @@ class session
 
    /**
     * Checking for bot (return 0 if bot)
+    
     * @access public
-    * @param mixed $useragent 
+    * @param mixed $useragent Uset Agent
     * @return int
     */
    function checkBot($useragent)
@@ -95,7 +97,7 @@ class session
       {
          if (is_integer(strpos($useragent, $bot))) return 0;
       }
-      
+  
       return 1;
    }
 }
