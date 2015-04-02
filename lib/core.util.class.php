@@ -1,18 +1,6 @@
 <?php
 
 /**
- * Возвращает true если ОС - Windows
- * @return bool
- */
-function IsWindowsOS()
-{
-   if (substr(php_uname(), 0, 7) === "Windows") 
-      return true;
-
-   return false;
-}
-
-/**
  * PHP Syntax check
  *
  *
