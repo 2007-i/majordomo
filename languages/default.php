@@ -78,6 +78,7 @@ $dictionary=array(
 'APP_CALENDAR'=>'Calendar',
 'APP_READIT'=>'ReadIt',
 'APP_QUOTES'=>'Quotes',
+'APP_QUOTE'=>'Quotes',
 
 'MODULE_OBJECTS_HISTORY'=>'Objects History',
 'MODULE_BT_DEVICES'=>'Bluetooth Devices',
