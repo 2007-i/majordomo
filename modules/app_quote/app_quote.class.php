@@ -204,6 +204,18 @@ class app_quote extends module
       
       return $rec;
    }
+   
+   private function IsQuoteExist($quote)
+   {
+      $query = "select count(*) CNT
+                  from APP_QUOTE 
+                 where QUOTE_HASH = '" . md5($quote) . "'";
+      
+      $result = SQLSelectOne($query);
+      
+      return $result['CNT'] > 0;
+   }
+   
    /**
     * Return Quote by Ids
     * @param mixed $quoteIds 
@@ -266,6 +278,7 @@ class app_quote extends module
       $requestDate =  date('Y-m-d H:i:s');
       $rec = array();
       $rec["QUOTE"]      = $quote;
+      $rec["QUOTE_HASH"] = md5($quote);
       $rec["LM_DATE"]    = $requestDate;
       $rec["QUOTE_ID"]   = $quoteID;
       
@@ -286,9 +299,11 @@ class app_quote extends module
       $requestDate =  date('Y-m-d H:i:s');
       $rec = array();
       $rec["QUOTE"]      = $quote;
+      $rec["QUOTE_HASH"] = md5($quote);
       $rec["LM_DATE"]    = $requestDate;
       
       $res = SQLInsert("APP_QUOTE", $rec);
+      
       return $res;
    }
    
@@ -308,8 +323,10 @@ class app_quote extends module
       $query = "create table APP_QUOTE(";
       $query .= "  QUOTE_ID             INT(10) not null auto_increment,";
       $query .= "  QUOTE                TEXT not null,";
+      $query .= "  QUOTE_HASH           VARCHAR(32) not null,";
       $query .= "  LM_DATE              DATETIME not null,";
-      $query .= "  primary key (QUOTE_ID)";
+      $query .= "  primary key (QUOTE_ID),";
+      $query .= "  unique key AK_APP_QUOTE_HASH (QUOTE_HASH)";
       $query .= "  ) ENGINE=InnoDB CHARACTER SET=utf8;";
       
       SQLExec($query);
@@ -395,15 +412,18 @@ class app_quote extends module
       if ($this->mode == 'update')
       {
          global $body;
-         $result = false;
          
+         $result = false;
          if (isset($rec['QUOTE_ID']))
             $result = $this->UpdateQuote($rec['QUOTE_ID'], $body);
          else
          {
-            $rec['QUOTE_ID'] = $this->SetQuote($body);
-            if ($rec['QUOTE_ID'] != 0) 
-               $result = true;
+            if (!$this->IsQuoteExist($body))
+            {
+               $rec['QUOTE_ID'] = $this->SetQuote($body);
+               if ($rec['QUOTE_ID'] != 0) 
+                  $result = true;
+            }
          }
          
          $out['OK'] = $result;
@@ -439,8 +459,10 @@ class app_quote extends module
             
             for($i = 0; $i < $total_lines; $i++) 
             {
-               if ($lines[$i] == '') continue;
-               $this->SetQuote($lines[$i]);
+               $quote = $lines[$i];
+               if ($quote == '' || $this->IsQuoteExist($quote)) continue;
+               
+               $this->SetQuote($quote);
                $out["TOTAL"]++;
             }
          }
