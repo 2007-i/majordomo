@@ -17,7 +17,8 @@ class app_quote extends module
     *
     * @access private
     */
-   function app_quote() {
+   function app_quote()
+   {
       $this->name="app_quote";
       $this->title="<#LANG_APP_QUOTE#>";
       $this->module_category="<#LANG_SECTION_APPLICATIONS#>";
@@ -384,13 +385,11 @@ class app_quote extends module
     */
    public function install($data = '')
    {
-      $val = SQLSelectOne("select count(*)+2 CNT from information_schema.tables where table_schema = '" . DB_NAME . "' and table_name = 'APP_QUOTE'");
-      $val = $val["CNT"] == 2 ? FALSE : TRUE;
-      
-      if (!file_exists(DIR_MODULES . $this->name . "/installed") && $val == FALSE) 
+      if (!file_exists(DIR_MODULES . $this->name . "/installed") && !$this->IsTableExist('APP_QUOTE')) 
       {
          $this->DeleteAppQuoteData();
          $this->CreateAppQuoteDataStructure();
+         $this->ImportFromPreviousQuotesApp();
       }
       
       parent::install();
@@ -426,6 +425,19 @@ class app_quote extends module
       
       
       return $rec;
+   }
+   
+   /**
+    * Check table
+    * @param mixed $tableName 
+    * @return bool
+    */
+   private function IsTableExist($tableName)
+   {
+      $val = SQLSelectOne("select count(*)+2 CNT from information_schema.tables where table_schema = '" . DB_NAME . "' and table_name = 'APP_QUOTE'");
+      $val = $val["CNT"] == 2 ? false : true;
+      
+      return $val;
    }
    
    /**
@@ -567,6 +579,26 @@ class app_quote extends module
       $query .= "  ) ENGINE=InnoDB CHARACTER SET=utf8;";
       
       SQLExec($query);
+   }
+   
+   /**
+    * Import all quote from app_quotes. App_quotes - app included in majordomo
+    * @return void
+    */
+   private function ImportFromPreviousQuotesApp()
+   {
+      if (!$this->IsTableExist('APP_QUOTES')) return;
+      
+      $quotes = SQLSelect("select BODY from APP_QUOTES");
+      
+      foreach($quotes as $quote)
+      {
+         $item = $quote['BODY'];
+         
+         if ($this->IsQuoteExist($item)) continue;
+         
+         $this->SetQuote($item);
+      }
    }
    
 }
