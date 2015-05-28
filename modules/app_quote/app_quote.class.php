@@ -175,19 +175,19 @@ class app_quote extends module
       
       $res = $this->GetQuoteByIds($session->data['SEEN_QUOTES'], $orderBy);
       
-      if (!isset($res['ID'])) 
+      if (!isset($res['QUOTE_ID'])) 
       {
          $session->data['SEEN_QUOTES'] = '0';
          $res = $this->GetQuoteByIds($session->data['SEEN_QUOTES'], $orderBy);
       }
       
-      if (isset($res['ID']))
-         $session->data['SEEN_QUOTES'] .= ',' . $res['ID'];
+      if (isset($res['QUOTE_ID']))
+         $session->data['SEEN_QUOTES'] .= ',' . $res['QUOTE_ID'];
       
       $session->save();
 
       if ($res['QUOTE_ID'])
-         $out['BODY'] = $res['QUOTE']; 
+         $out['QUOTE'] = $res['QUOTE']; 
    }
    
    /**
@@ -200,6 +200,7 @@ class app_quote extends module
       $rec = SQLSelectOne("select QUOTE_ID, QUOTE, LM_DATE 
                              from APP_QUOTE 
                             where QUOTE_ID = " . $quoteID);
+    
       
       return $rec;
    }
@@ -222,9 +223,9 @@ class app_quote extends module
    
    private function SelectQuotesByIds($quoteIdArray)
    {
-      $quoteIds = implode(',', $quoteIdArray);
       
-      $result = SQLSelectOne("select QUOTE_ID, QUOTE, LM_DATE
+      $quoteIds = implode(',', $quoteIdArray);
+      $result = SQLSelect("select QUOTE_ID, QUOTE, LM_DATE
                              from APP_QUOTE
                             where QUOTE_ID in (" . $quoteIds . ")");
       
@@ -233,7 +234,7 @@ class app_quote extends module
    
    private function SelectQuotes()
    {
-      $result = SQLSelectOne("select QUOTE_ID, QUOTE, LM_DATE
+      $result = SQLSelect("select QUOTE_ID, QUOTE, LM_DATE
                              from APP_QUOTE");
       
       return $result;
@@ -387,20 +388,26 @@ class app_quote extends module
       if ($this->owner->name == 'panel')
          $out['CONTROLPANEL'] = 1;
       
-      if (is_integer($id))
+      
+      if (is_numeric($id))
          $rec = $this->SelectQuoteByID($id);
       
-      if ($this->mode=='update')
+      if ($this->mode == 'update')
       {
          global $body;
+         $result = false;
          
          if (isset($rec['QUOTE_ID']))
-            $out['ERR_BODY'] = $this->UpdateQuote($rec['QUOTE_ID'], $body);
+            $result = $this->UpdateQuote($rec['QUOTE_ID'], $body);
          else
+         {
             $rec['QUOTE_ID'] = $this->SetQuote($body);
+            if ($rec['QUOTE_ID'] != 0) 
+               $result = true;
+         }
          
-         $out['OK'] = 0;
-         $out['ERR'] = 0;
+         $out['OK'] = $result;
+         
       }
       
       foreach($rec as $k=>$v)

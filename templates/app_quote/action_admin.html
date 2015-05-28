@@ -1,22 +1,25 @@
 
  <!-- action usual -->
  <!-- table app_quote search -->
- [#if VIEW_MODE="search_app_quote" || VIEW_MODE=""#]
-  [#inc app_quote_search_admin.html#]
- [#endif VIEW_MODE#]
- <!-- / table app_quote search -->
- <!-- table app_quote import -->
- [#if VIEW_MODE="import_app_quote"#]
- [#inc app_quote_import.html#]
- [#endif VIEW_MODE#]
- <!-- / table app_quote imoprt -->
- <!-- table app_quote edit -->
- [#if VIEW_MODE="edit_app_quote"#]
+[#if VIEW_MODE="search_app_quote" || VIEW_MODE=""#]
+   [#inc app_quote_search_admin.html#]
+[#endif VIEW_MODE#]
+<!-- / table app_quote search -->
+
+<!-- table app_quote import -->
+[#if VIEW_MODE="import_app_quote"#]
+   [#inc app_quote_import.html#]
+[#endif VIEW_MODE#]
+<!-- / table app_quote imoprt -->
+
+<!-- table app_quote edit -->
+[#if VIEW_MODE="edit_app_quote"#]
    [#inc app_quote_edit.html#]
- [#endif VIEW_MODE#]
- <!-- / table app_quote edit -->
- <!-- table app_quote view --> 
- [#if VIEW_MODE="view_app_quote"#]
+[#endif VIEW_MODE#]
+<!-- / table app_quote edit -->
+
+<!-- table app_quote view --> 
+[#if VIEW_MODE="view_app_quote"#]
    [#inc app_quote_view.html#]
- [#endif VIEW_MODE#]
- <!-- / table app_quote view -->
+[#endif VIEW_MODE#]
+<!-- / table app_quote view -->
