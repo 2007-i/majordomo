@@ -191,148 +191,6 @@ class app_quote extends module
    }
    
    /**
-    * Return quote by ID
-    * @param mixed $quoteID  Quote ID
-    * @return array
-    */
-   private function SelectQuoteByID($quoteID)
-   {
-      $rec = SQLSelectOne("select QUOTE_ID, QUOTE, LM_DATE 
-                             from APP_QUOTE 
-                            where QUOTE_ID = " . $quoteID);
-    
-      
-      return $rec;
-   }
-   
-   private function IsQuoteExist($quote)
-   {
-      $query = "select count(*) CNT
-                  from APP_QUOTE 
-                 where QUOTE_HASH = '" . md5($quote) . "'";
-      
-      $result = SQLSelectOne($query);
-      
-      return $result['CNT'] > 0;
-   }
-   
-   /**
-    * Return Quote by Ids
-    * @param mixed $quoteIds 
-    * @param mixed $orderBy Order param
-    * @return array
-    */
-   private function SelectQuoteByIds($quoteIds, $orderBy)
-   {
-      $result = SQLSelectOne("select QUOTE_ID, QUOTE, LM_DATE
-                             from APP_QUOTE
-                            where QUOTE_ID not in (" . $quoteIds . ")
-                            order by " . $orderBy ."
-                            limit 1");
-      
-      return $result;
-   }
-   
-   private function SelectQuotesByIds($quoteIdArray)
-   {
-      
-      $quoteIds = implode(',', $quoteIdArray);
-      $result = SQLSelect("select QUOTE_ID, QUOTE, LM_DATE
-                             from APP_QUOTE
-                            where QUOTE_ID in (" . $quoteIds . ")");
-      
-      return $result;
-   }
-   
-   private function SelectQuotes()
-   {
-      $result = SQLSelect("select QUOTE_ID, QUOTE, LM_DATE
-                             from APP_QUOTE");
-      
-      return $result;
-   }
-   
-   /**
-    * DeleteQuote by quote ID
-    * @param mixed $quoteID  Quote ID
-    */
-   private function DeleteQuoteByID($quoteID)
-   {
-      // some action for related tables
-      SQLExec("delete
-                 from APP_QUOTE
-                where QUOTE_ID = " . $quoteID);
-   }
-   
-   /**
-    * Update quote by ID
-    * @param mixed $quoteID Quote ID
-    * @param mixed $quote   Quote content
-    * @return bool
-    */
-   private function UpdateQuote($quoteID, $quote)
-   {
-      if ($quoteID == null) return false;  // quoteID not found
-      if ($quote == '') return false;
-      
-      $requestDate =  date('Y-m-d H:i:s');
-      $rec = array();
-      $rec["QUOTE"]      = $quote;
-      $rec["QUOTE_HASH"] = md5($quote);
-      $rec["LM_DATE"]    = $requestDate;
-      $rec["QUOTE_ID"]   = $quoteID;
-      
-      $result = SQLUpdate("APP_QUOTE", $rec, "QUOTE_ID");
-      
-      return $result == 1;
-   }
-   
-   /**
-    * Add quote to database
-    * @param mixed $quote Quote
-    * @return bool|int
-    */
-   private function SetQuote($quote)
-   {
-      if ($quote == '') return false;
-      
-      $requestDate =  date('Y-m-d H:i:s');
-      $rec = array();
-      $rec["QUOTE"]      = $quote;
-      $rec["QUOTE_HASH"] = md5($quote);
-      $rec["LM_DATE"]    = $requestDate;
-      
-      $res = SQLInsert("APP_QUOTE", $rec);
-      
-      return $res;
-   }
-   
-   /**
-    * Remove application data from database
-    */
-   private function DeleteAppQuoteData()
-   {
-      SQLExec('drop table if exists APP_QUOTE');
-   }
-   
-   /**
-    * Application Quote DataStructure creation
-    */
-   private function CreateAppQuoteDataStructure()
-   {
-      $query = "create table APP_QUOTE(";
-      $query .= "  QUOTE_ID             INT(10) not null auto_increment,";
-      $query .= "  QUOTE                TEXT not null,";
-      $query .= "  QUOTE_HASH           VARCHAR(32) not null,";
-      $query .= "  LM_DATE              DATETIME not null,";
-      $query .= "  primary key (QUOTE_ID),";
-      $query .= "  unique key AK_APP_QUOTE_HASH (QUOTE_HASH)";
-      $query .= "  ) ENGINE=InnoDB CHARACTER SET=utf8;";
-      
-      SQLExec($query);
-   }
-   
-   /**
     * app_quote search
     */
    public function search_app_quote(&$out)
@@ -415,7 +273,10 @@ class app_quote extends module
          
          $result = false;
          if (isset($rec['QUOTE_ID']))
-            $result = $this->UpdateQuote($rec['QUOTE_ID'], $body);
+         {
+            if (!$this->IsQuoteExist($body))
+               $result = $this->UpdateQuote($rec['QUOTE_ID'], $body);
+         }
          else
          {
             if (!$this->IsQuoteExist($body))
@@ -550,6 +411,162 @@ class app_quote extends module
    public function dbInstall($data)
    {
    
+   }
+   
+   /**
+    * Return quote by ID
+    * @param mixed $quoteID  Quote ID
+    * @return array
+    */
+   private function SelectQuoteByID($quoteID)
+   {
+      $rec = SQLSelectOne("select QUOTE_ID, QUOTE, LM_DATE 
+                             from APP_QUOTE 
+                            where QUOTE_ID = " . $quoteID);
+      
+      
+      return $rec;
+   }
+   
+   /**
+    * Check for exist quote
+    * @param mixed $quote Quote
+    * @return bool
+    */
+   private function IsQuoteExist($quote)
+   {
+      $query = "select count(*) CNT
+                  from APP_QUOTE 
+                 where QUOTE_HASH = '" . md5($quote) . "'";
+      
+      $result = SQLSelectOne($query);
+      
+      return $result['CNT'] > 0;
+   }
+   
+   /**
+    * Return Quote by Ids
+    * @param mixed $quoteIds 
+    * @param mixed $orderBy Order param
+    * @return array
+    */
+   private function SelectQuoteByIds($quoteIds, $orderBy)
+   {
+      $result = SQLSelectOne("select QUOTE_ID, QUOTE, LM_DATE
+                             from APP_QUOTE
+                            where QUOTE_ID not in (" . $quoteIds . ")
+                            order by " . $orderBy ."
+                            limit 1");
+      
+      return $result;
+   }
+   
+   /**
+    * Return selected quotes
+    * @param mixed $quoteIdArray Array of selected quotes
+    * @return array
+    */
+   private function SelectQuotesByIds($quoteIdArray)
+   {
+      
+      $quoteIds = implode(',', $quoteIdArray);
+      $result = SQLSelect("select QUOTE_ID, QUOTE, LM_DATE
+                             from APP_QUOTE
+                            where QUOTE_ID in (" . $quoteIds . ")");
+      
+      return $result;
+   }
+   
+   /**
+    * Return all quotes as array
+    * @return array
+    */
+   private function SelectQuotes()
+   {
+      $result = SQLSelect("select QUOTE_ID, QUOTE, LM_DATE
+                             from APP_QUOTE");
+      
+      return $result;
+   }
+   
+   /**
+    * DeleteQuote by quote ID
+    * @param mixed $quoteID  Quote ID
+    */
+   private function DeleteQuoteByID($quoteID)
+   {
+      // some action for related tables
+      SQLExec("delete
+                 from APP_QUOTE
+                where QUOTE_ID = " . $quoteID);
+   }
+   
+   /**
+    * Update quote by ID
+    * @param mixed $quoteID Quote ID
+    * @param mixed $quote   Quote content
+    * @return bool
+    */
+   private function UpdateQuote($quoteID, $quote)
+   {
+      if ($quoteID == null) return false;  // quoteID not found
+      if ($quote == '') return false;
+      
+      $requestDate =  date('Y-m-d H:i:s');
+      $rec = array();
+      $rec["QUOTE"]      = $quote;
+      $rec["QUOTE_HASH"] = md5($quote);
+      $rec["LM_DATE"]    = $requestDate;
+      $rec["QUOTE_ID"]   = $quoteID;
+      
+      $result = SQLUpdate("APP_QUOTE", $rec, "QUOTE_ID");
+      
+      return $result == 1;
+   }
+   
+   /**
+    * Add quote to database
+    * @param mixed $quote Quote
+    * @return bool|int
+    */
+   private function SetQuote($quote)
+   {
+      if ($quote == '') return false;
+      
+      $requestDate =  date('Y-m-d H:i:s');
+      $rec = array();
+      $rec["QUOTE"]      = $quote;
+      $rec["QUOTE_HASH"] = md5($quote);
+      $rec["LM_DATE"]    = $requestDate;
+      
+      $res = SQLInsert("APP_QUOTE", $rec);
+      
+      return $res;
+   }
+   
+   /**
+    * Remove application data from database
+    */
+   private function DeleteAppQuoteData()
+   {
+      SQLExec('drop table if exists APP_QUOTE');
+   }
+   
+   /**
+    * Application Quote DataStructure creation
+    */
+   private function CreateAppQuoteDataStructure()
+   {
+      $query = "create table APP_QUOTE(";
+      $query .= "  QUOTE_ID             INT(10) not null auto_increment,";
+      $query .= "  QUOTE                TEXT not null,";
+      $query .= "  QUOTE_HASH           VARCHAR(32) not null,";
+      $query .= "  LM_DATE              DATETIME not null,";
+      $query .= "  primary key (QUOTE_ID),";
+      $query .= "  unique key AK_APP_QUOTE_HASH (QUOTE_HASH)";
+      $query .= "  ) ENGINE=InnoDB CHARACTER SET=utf8;";
+      
+      SQLExec($query);
    }
    
 }
