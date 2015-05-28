@@ -264,12 +264,12 @@ class app_quote extends module
       if ($this->owner->name == 'panel')
          $out['CONTROLPANEL'] = 1;
       
-      
       if (is_numeric($id))
          $rec = $this->SelectQuoteByID($id);
       
       if ($this->mode == 'update')
       {
+         
          global $body;
          
          $result = false;
@@ -413,21 +413,6 @@ class app_quote extends module
    }
    
    /**
-    * Return quote by ID
-    * @param mixed $quoteID  Quote ID
-    * @return array
-    */
-   private function SelectQuoteByID($quoteID)
-   {
-      $rec = SQLSelectOne("select QUOTE_ID, QUOTE, LM_DATE 
-                             from APP_QUOTE 
-                            where QUOTE_ID = " . $quoteID);
-      
-      
-      return $rec;
-   }
-   
-   /**
     * Check table
     * @param mixed $tableName 
     * @return bool
@@ -454,6 +439,37 @@ class app_quote extends module
       $result = SQLSelectOne($query);
       
       return $result['CNT'] > 0;
+   }
+   
+   /**
+    * Return random quote
+    * @return mixed
+    */
+   public function GetRandomQuote()
+   {
+      $query = "select QUOTE
+                  from APP_QUOTE 
+                 order by RAND()
+                 limit 1";
+     
+      $result = SQLSelectOne($query);
+      
+      return $result["QUOTE"];
+   }
+   
+   /**
+    * Return quote by ID
+    * @param mixed $quoteID  Quote ID
+    * @return array
+    */
+   private function SelectQuoteByID($quoteID)
+   {
+      $rec = SQLSelectOne("select QUOTE_ID, QUOTE, LM_DATE 
+                             from APP_QUOTE 
+                            where QUOTE_ID = " . $quoteID);
+      
+      
+      return $rec;
    }
    
    /**
