@@ -23,26 +23,32 @@ $snmpdevices = new snmpdevices();
 $socket = stream_socket_server("udp://0.0.0.0:162", $errno, $errstr, STREAM_SERVER_BIND);
 
 // If we could not bind successfully, let's throw an error
-if(!$socket){
-    die($errstr);
-
-}else{
-    do {
-        $pkt = stream_socket_recvfrom($socket, 512, 0, $peer);
-        if (preg_match('/:\d+$/', $peer, $m)) {
-         $peer=str_replace($m[0], '', $peer);
-        }
-        echo date('Y-m-d H:i:s').' new snmp trap from '.$peer."\n";
-        $device=SQLSelectOne("SELECT ID FROM snmpdevices WHERE HOST LIKE '".DBSafe($peer)."'");
-        if ($device['ID']) {
+if(!$socket)
+{
+   die($errstr);
+}
+else
+{
+   do 
+   {
+      $pkt = stream_socket_recvfrom($socket, 512, 0, $peer);
+      if (preg_match('/:\d+$/', $peer, $m)) 
+         $peer = str_replace($m[0], '', $peer);
+      
+      echo date('Y-m-d H:i:s').' new snmp trap from ' . $peer . "\n";
+      $device=SQLSelectOne("SELECT ID FROM snmpdevices WHERE HOST LIKE '" . DBSafe($peer) . "'");
+        
+      if ($device['ID'])
+      {
          $snmpdevices->readDevice($device['ID']);
-        } else {
+      }
+      else
+      {
          $device['TITLE']=$peer;
          $device['HOST']=$peer;
          $device['ID']=SQLInsert('snmpdevices', $device);
-        }
-
-    } while($pkt !== false);
+      }
+   } while($pkt !== false);
 }
 
  $db->Disconnect(); // closing database connection
