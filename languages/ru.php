@@ -76,7 +76,6 @@ $dictionary=array(
 'APP_WEATHER'=>'Погода',
 'APP_CALENDAR'=>'Календарь',
 'APP_READIT'=>'Присл. ссылки',
-'APP_QUOTES'=>'Цитаты',
 
 'MODULE_OBJECTS_HISTORY'=>'История объектов',
 'MODULE_BT_DEVICES'=>'Bluetooth-устройства',
