@@ -14,7 +14,7 @@ include_once("./lib/loader.php");
 
 $ffmpegPath = IsWindowsOS() ? SERVER_ROOT.'/apps/ffmpeg/ffmpeg.exe' : 'ffmpeg';
 
-define("PATH_TO_FFMPEG", $ffmpegPath);  // Path to FFMPEG
+define("PATH_TO_FFMPEG", $ffmpegPath);   // Path to FFMPEG
 
 define("_I_CACHING", "1");               // Chaching enabled, 1 - yes, 0 - no
 define("_I_CACHE_PATH", "./cached/");    // Path to cache dir
@@ -26,7 +26,8 @@ if ($url)
    
    if (preg_match('/^rtsp:/is', $url)) 
    {
-      exec(PATH_TO_FFMPEG.' -y -i "' . $url . '" -r 10 -f image2 -ss 00:00:01.500 -vframes 1 ' . $img);
+      system(PATH_TO_FFMPEG . ' -stimeout 5000000 -rtsp_transport tcp -y -i "' . $url . '" -r 10 -q:v 9 -f image2 -ss 00:00:01.500 -vframes 1 ' . $img);
+
       $dc = 1;
    }
    else 
