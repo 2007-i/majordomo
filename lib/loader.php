@@ -15,15 +15,14 @@
 Define("THIS_URL", $_SERVER['REQUEST_URI']);
 // liblary modules loader
 
-if ($lib_dir = @opendir("./lib"))
+if ($lib_dir = @opendir("./lib")) 
 {
    while (($lib_file = readdir($lib_dir)) !== false)
    {
       if ((preg_match("/\.php$/", $lib_file)) && ($lib_file!="loader.php"))
-      {
-         include_once("./lib/" . $lib_file);
-      }
+         include_once("./lib/$lib_file");
    }
+  
    closedir($lib_dir);
 }
 
@@ -33,4 +32,4 @@ require_once dirname(__FILE__) . '/log4php/Logger.php';
 // Tell log4php to use our configuration file.
 Logger::configure(dirname(__FILE__) . '/log4php/config.php');
 
-?>
+require_once './database/dal.php';
