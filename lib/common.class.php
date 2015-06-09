@@ -585,23 +585,13 @@ function getRandomLine($fileName)
 }
 
 /**
-<<<<<<< HEAD
  * Title
  *
  * Description
  *
  * @access public
  */
-function playSound($filename, $exclusive = 0, $priority = 0)
-=======
-* Title
-*
-* Description
-*
-* @access public
-*/
 function playSound($fileName, $exclusive = 0, $priority = 0)
->>>>>>> sound
 {
    global $ignoreSound;
 
