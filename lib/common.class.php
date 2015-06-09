@@ -585,6 +585,7 @@ function getRandomLine($fileName)
 }
 
 /**
+<<<<<<< HEAD
  * Title
  *
  * Description
@@ -592,25 +593,33 @@ function getRandomLine($fileName)
  * @access public
  */
 function playSound($filename, $exclusive = 0, $priority = 0)
+=======
+* Title
+*
+* Description
+*
+* @access public
+*/
+function playSound($fileName, $exclusive = 0, $priority = 0)
+>>>>>>> sound
 {
    global $ignoreSound;
 
-   if (file_exists(ROOT.'sounds/'.$filename.'.mp3'))
-      $filename = ROOT .'sounds/'.$filename.'.mp3';
-   elseif (file_exists(ROOT.'sounds/'.$filename))
-      $filename=ROOT.'sounds/'.$filename;
+   if (file_exists(ROOT . 'asset/sound/' . $fileName . '.mp3'))
+      $fileName = ROOT .'asset/sound/'. $fileName . '.mp3';
+   elseif (file_exists(ROOT . 'asset/sound/' . $fileName))
+      $fileName = ROOT . 'asset/sound/' . $fileName;
 
    if (defined('SETTINGS_HOOK_BEFORE_PLAYSOUND') && SETTINGS_HOOK_BEFORE_PLAYSOUND != '')
       eval(SETTINGS_HOOK_BEFORE_PLAYSOUND);
 
    if (!$ignoreSound)
    {
-      if (file_exists($filename))
+      if (file_exists($fileName))
       {
-         if (IsWindowsOS())
-            safe_exec(DOC_ROOT.'/rc/madplay.exe '.$filename, $exclusive, $priority);
-         else
-            safe_exec('mplayer ' . $filename, $exclusive, $priority);
+         $player = IsWindowsOS() ? DOC_ROOT . '/rc/madplay.exe ' : 'mplayer ';
+         
+         safe_exec($player . $fileName, $exclusive, $priority);
       }
    }
 
