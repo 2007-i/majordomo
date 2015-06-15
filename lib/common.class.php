@@ -11,7 +11,7 @@
  * @param mixed $ph Text to say
  * @param mixed $level Voice level
  */
-function say($ph, $level = 0)
+ function say($ph, $level = 0, $member_id = 0) 
 {
    global $commandLine;
    global $voicemode;
@@ -25,18 +25,27 @@ function say($ph, $level = 0)
    $rec['MESSAGE']   = $ph;
    $rec['ADDED']     = date('Y-m-d H:i:s');
    $rec['ROOM_ID']   = 0;
-   $rec['MEMBER_ID'] = 0;
+        $rec['MEMBER_ID'] = $member_id;
    
    if ($level > 0)
       $rec['IMPORTANCE'] = $level;
    
    $rec['ID'] = SQLInsert('shouts', $rec);
 
-   if (defined('SETTINGS_HOOK_BEFORE_SAY') && SETTINGS_HOOK_BEFORE_SAY != '') 
-      eval(SETTINGS_HOOK_BEFORE_SAY);
-   
-   global $ignoreVoice;
-   if ($level >= (int)getGlobal('minMsgLevel') && !$ignoreVoice) 
+        if ($member_id) {
+
+               include_once(DIR_MODULES.'patterns/patterns.class.php');
+                $pt=new patterns();
+                $pt->checkAllPatterns($member_id);
+
+         return;
+        }
+
+        if (defined('SETTINGS_HOOK_BEFORE_SAY') && SETTINGS_HOOK_BEFORE_SAY!='')
+           eval(SETTINGS_HOOK_BEFORE_SAY);
+        
+        global $ignoreVoice;
+        if ($level >= (int)getGlobal('minMsgLevel') && !$ignoreVoice && !$member_id) 
    { 
       $lang = 'en';
       $google_file = false;
@@ -77,7 +86,7 @@ function say($ph, $level = 0)
    {
       include_once(DIR_MODULES . 'patterns/patterns.class.php');
       $pt = new patterns();
-      $pt->checkAllPatterns();
+      $pt->checkAllPatterns($member_id);
    }
 
    if (defined('SETTINGS_PUSHOVER_USER_KEY') && SETTINGS_PUSHOVER_USER_KEY && !$ignorePushover)

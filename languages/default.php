@@ -978,6 +978,8 @@ $dictionary=array(
 'CLEAR_FAVORITES'=>'Clear Favorites',
 'CLEAR_HISTORY'=>'Clear Recently played',
 
+'SKIP_SYSTEM'=>'Skip system messages',
+'ONETIME_PATTERN'=>'One-time pattern',
 
 'TEST'=>'test'
 
