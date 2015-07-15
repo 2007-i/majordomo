@@ -26,7 +26,7 @@ if (SETTINGS_SITE_LANGUAGE && file_exists(ROOT . 'languages/' . SETTINGS_SITE_LA
 
 include_once (ROOT . 'languages/default.php');
 
-if (defined('SETTINGS_SITE_TIMEZONE')) 
+if (defined('SETTINGS_SITE_TIMEZONE'))
 {
    ini_set('date.timezone', SETTINGS_SITE_TIMEZONE);
 }
@@ -38,4 +38,3 @@ echo timeNow();
 // closing database connection
 $db->Disconnect(); 
 
-?>
