@@ -9,58 +9,62 @@
 
 include_once("./config.php");
 include_once("./lib/loader.php");
-include_once(DIR_MODULES."panel.class.php");
+include_once(DIR_MODULES . "panel.class.php");
 
 $session = new session("prj");
-$db = new mysql(DB_HOST, '', DB_USER, DB_PASSWORD, DB_NAME); // connecting to database
-include_once("./load_settings.php");
 
+$db = new mysql(DB_HOST, '', DB_USER, DB_PASSWORD, DB_NAME);
+
+include_once("./load_settings.php");
 include_once(DIR_MODULES . "control_modules/control_modules.class.php");
 
-$cl = new control_modules();
+$cl  = new control_modules();
 $app = new panel();
 
 if ($md != $app->name)
    $app->restoreParams();
-else 
+else
    $app->getParams();
 
 $result = $app->run();
 
 // BEGIN: filter output
-if ($filterblock!='') 
+if ($filterblock != '')
 {
-   preg_match('/<!-- begin_data \['.$filterblock.'\] -->(.*?)<!-- end_data \['.$filterblock.'\] -->/is', $result, $match);
-   $result=$match[1];
+   $blockPattern = '/<!-- begin_data \[' . $filterblock . '\] -->(.*?)<!-- end_data \[' . $filterblock . '\] -->/is';
+   preg_match($blockPattern, $result, $match);
+   $result = $match[1];
 }
 // END: filter output
 
 // BEGIN: language constants
-if (preg_match_all('/&\#060\#LANG_(.+?)\#&\#062/is', $result, $matches)) 
+if (preg_match_all('/&\#060\#LANG_(.+?)\#&\#062/is', $result, $matches))
 {
    $total = count($matches[0]);
-   for($i = 0; $i < $total;$i++)
+   
+   for ($i = 0; $i < $total; $i++)
    {
-      if (preg_match('/value=["\']'.preg_quote($matches[0][$i]).'["\']/is', $result)) 
+      if (preg_match('/value=["\']' . preg_quote($matches[0][$i]) . '["\']/is', $result))
       {
          continue;
       }
-      if (defined('LANG_'.$matches[1][$i])) 
+
+      if (defined('LANG_' . $matches[1][$i]))
       {
-         $result = str_replace($matches[0][$i], constant('LANG_'.$matches[1][$i]), $result);
-      } 
-      else 
+         $result = str_replace($matches[0][$i], constant('LANG_' . $matches[1][$i]), $result);
+      }
+      else
       {
-         echo "'".$matches[1][$i]."'=>'',<br>";
+         echo "'" . $matches[1][$i] . "'=>'',<br />";
       }
    }
 }
 // END: language constants
 
-if (!headers_sent()) 
+if (!headers_sent())
 {
-   header ("HTTP/1.0: 200 OK\n");
-   header ('Content-Type: text/html; charset=utf-8');
+   header("HTTP/1.0: 200 OK\n");
+   header('Content-Type: text/html; charset=utf-8');
 }
 
 $result = str_replace("nf.php", "admin.php", $result);
@@ -69,5 +73,3 @@ echo $result;
 
 $session->save();
 $db->Disconnect(); // closing database connection
-
-?>

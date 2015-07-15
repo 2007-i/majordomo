@@ -1,11 +1,12 @@
 <?php
+
 /**
-* Main project script
-*
-* @package MajorDoMo
-* @author Serge Dzheigalo <jey@tut.by> http://smartliving.ru/
-* @version 1.1
-*/
+ * Main project script
+ *
+ * @package MajorDoMo
+ * @author Serge Dzheigalo <jey@tut.by> http://smartliving.ru/
+ * @version 1.1
+ */
 
 include_once("./config.php");
 include_once("./lib/loader.php");
@@ -17,6 +18,8 @@ include_once(DIR_MODULES . "application.class.php");
 
 $session = new session("prj");
 
+const GPS_LOCATION_RANGE_DEFAULT = 500;
+
 // connecting to database
 $db = new mysql(DB_HOST, '', DB_USER, DB_PASSWORD, DB_NAME);
 
@@ -25,7 +28,7 @@ include_once("./load_settings.php");
 if ($_REQUEST['location'])
 {
    $tmp = explode(',', $_REQUEST['location']);
-  
+   
    $_REQUEST['latitude']  = $tmp[0];
    $_REQUEST['longitude'] = $tmp[1];
 }
@@ -34,46 +37,61 @@ if ($_REQUEST['op'] != '')
 {
    $op = $_REQUEST['op'];
    $ok = 0;
+   
    if ($op == 'zones')
    {
       $zones = SQLSelect("SELECT * FROM gpslocations");
       echo json_encode(array('RESULT' => array('ZONES' => $zones, 'STATUS' => 'OK')));
       $ok = 1;
    }
- 
+
    if ($op == 'add_zone' && $_REQUEST['latitude'] && $_REQUEST['longitude'] && $_REQUEST['title'])
    {
       global $title;
       global $range;
-      $old_location = SQLSelect("SELECT * FROM gpslocations WHERE TITLE LIKE '" . DBSafe($title) . "'");
-  
+
+      $sqlQuery = "SELECT *
+                     FROM gpslocations
+                    WHERE TITLE LIKE '" . DBSafe($title) . "'";
+      
+      $old_location = SQLSelect($sqlQuery);
+      
       if ($old_location['ID'])
          $title .= ' (1)';
-  
+      
       if (!$range)
          $range = 200;
-  
+      
       $rec = array();
+      
       $rec['TITLE'] = $title;
-      $rec['LAT'] = $_REQUEST['latitude'];
-      $rec['LON'] = $_REQUEST['longitude'];
+      $rec['LAT']   = $_REQUEST['latitude'];
+      $rec['LON']   = $_REQUEST['longitude'];
       $rec['RANGE'] = (int)$range;
-      $rec['ID'] = SQLInsert('gpslocations', $rec);
+      $rec['ID']    = SQLInsert('gpslocations', $rec);
       
       echo json_encode(array('RESULT' => array('STATUS' => 'OK')));
+      
       $ok = 1;
    }
- 
+
    if ($op == 'set_token' && $_REQUEST['token'] && $_REQUEST['deviceid'])
    {
-      $device = SQLSelectOne("SELECT * FROM gpsdevices WHERE DEVICEID='" . DBSafe($_REQUEST['deviceid']) . "'");
+      $sqlQuery = "SELECT *
+                     FROM gpsdevices
+                    WHERE DEVICEID = '" . DBSafe($_REQUEST['deviceid']) . "'";
+      
+      $device = SQLSelectOne($sqlQuery);
+      
       if (!$device['ID'])
       {
          $device = array();
+
          $device['DEVICEID'] = $_REQUEST['deviceid'];
          $device['TITLE']    = 'New GPS Device';
          $device['ID']       = SQLInsert('gpsdevices', $device);
       }
+
       $device['TOKEN'] = $_REQUEST['token'];
       SQLUpdate('gpsdevices', $device);
       $ok = 1;
@@ -91,11 +109,16 @@ if (isset($_REQUEST['latitude']))
    //DebMes("GPS DATA RECEIVED: \n".serialize($_REQUEST));
    if ($_REQUEST['deviceid'])
    {
-      $device = SQLSelectOne("SELECT * FROM gpsdevices WHERE DEVICEID='" . DBSafe($_REQUEST['deviceid']) . "'");
-   
+      $sqlQuery = "SELECT *
+                     FROM gpsdevices
+                    WHERE DEVICEID = '" . DBSafe($_REQUEST['deviceid']) . "'";
+      
+      $device = SQLSelectOne($sqlQuery);
+      
       if (!$device['ID'])
       {
          $device = array();
+
          $device['DEVICEID'] = $_REQUEST['deviceid'];
          $device['TITLE']    = 'New GPS Device';
 
@@ -104,8 +127,8 @@ if (isset($_REQUEST['latitude']))
          
          $device['ID'] = SQLInsert('gpsdevices', $device);
          
-         $sqlQuery = "UPDATE gpslog 
-                         SET DEVICE_ID = '" . $device['ID'] . "' 
+         $sqlQuery = "UPDATE gpslog
+                         SET DEVICE_ID = '" . $device['ID'] . "'
                        WHERE DEVICEID = '" . DBSafe($_REQUEST['deviceid']) . "'";
          
          SQLExec($sqlQuery);
@@ -131,16 +154,19 @@ if (isset($_REQUEST['latitude']))
    $rec['DEVICEID']  = $_REQUEST['deviceid'];
    $rec['ACCURACY']  = isset($_REQUEST['accuracy']) ? $_REQUEST['accuracy'] : 0;
 
-   
    if ($device['ID'])
       $rec['DEVICE_ID'] = $device['ID'];
-  
+   
    $rec['ID'] = SQLInsert('gpslog', $rec);
 
    if ($device['USER_ID'])
    {
-      $user = SQLSelectOne("SELECT * FROM users WHERE ID='" . $device['USER_ID'] . "'");
-    
+      $sqlQuery = "SELECT *
+                     FROM users
+                    WHERE ID = '" . $device['USER_ID'] . "'";
+      
+      $user = SQLSelectOne($sqlQuery);
+
       if ($user['LINKED_OBJECT'])
       {
          setGlobal($user['LINKED_OBJECT'] . '.Coordinates', $rec['LAT'] . ',' . $rec['LON']);
@@ -148,28 +174,30 @@ if (isset($_REQUEST['latitude']))
          setGlobal($user['LINKED_OBJECT'] . '.CoordinatesUpdatedTimestamp', time());
          setGlobal($user['LINKED_OBJECT'] . '.BattLevel', $rec['BATTLEVEL']);
          setGlobal($user['LINKED_OBJECT'] . '.Charging', $rec['CHARGING']);
-     
-         $sqlQuery = "SELECT * 
-                        FROM gpslog 
-                       WHERE ID        != '" . $rec['ID'] . "' 
+         
+         $sqlQuery = "SELECT *
+                        FROM gpslog
+                       WHERE ID        != '" . $rec['ID'] . "'
                          AND DEVICE_ID = '" . $device['ID'] . "'
                        ORDER BY ID DESC
                        LIMIT 1";
-         
+
          $prev_log = SQLSelectOne($sqlQuery);
-     
+
          if ($prev_log['ID'])
          {
             $distance = calculateTheDistance($rec['LAT'], $rec['LON'], $prev_log['LAT'], $prev_log['LON']);
-         
+            
             if ($distance > 100)
             {
                //we're moving
-               $linkedObjectMoving = $user['LINKED_OBJECT'] . '_moving';
-               setGlobal($user['LINKED_OBJECT'] . '.isMoving', 1);
-               clearTimeOut($linkedObjectMoving);
+               $objectIsMoving = $user['LINKED_OBJECT'] . '.isMoving';
+
+               setGlobal($objectIsMoving, 1);
+               clearTimeOut($user['LINKED_OBJECT'] . '_moving');
+               
                // stopped after 15 minutes of inactivity
-               setTimeOut($linkedObjectMoving, "setGlobal('" . $user['LINKED_OBJECT'] . ".isMoving', 0);", 15 * 60);
+               setTimeOut($user['LINKED_OBJECT'] . '_moving', "setGlobal('" . $objectIsMoving . "', 0);", 15 * 60);
             }
          }
       }
@@ -183,55 +211,57 @@ if (isset($_REQUEST['latitude']))
    $total     = count($locations);
 
    $location_found = 0;
-  
+   
    for ($i = 0; $i < $total; $i++)
    {
       if (!$locations[$i]['RANGE'])
-         $locations[$i]['RANGE'] = 500;
+         $locations[$i]['RANGE'] = GPS_LOCATION_RANGE_DEFAULT;
       
       $distance = calculateTheDistance($lat, $lon, $locations[$i]['LAT'], $locations[$i]['LON']);
       
-      //echo ' ('.$locations[$i]['LAT'].' : '.$locations[$i]['LON'].') '.$distance.' m';
+      //echo ' (' . $locations[$i]['LAT'] . ' : ' . $locations[$i]['LON'] . ') ' . $distance . ' m';
       if ($distance <= $locations[$i]['RANGE'])
       {
          //Debmes("Device (" . $device['TITLE'] . ") NEAR location " . $locations[$i]['TITLE']);
          $location_found = 1;
+         
          if ($user['LINKED_OBJECT'])
             setGlobal($user['LINKED_OBJECT'] . '.seenAt', $locations[$i]['TITLE']);
-    
+         
          // we are at location
          $rec['LOCATION_ID'] = $locations[$i]['ID'];
-    
+         
          SQLUpdate('gpslog', $rec);
 
-         $sqlQuery = "SELECT * 
-                        FROM gpslog 
-                       WHERE DEVICE_ID = '" . $device['ID'] . "' 
-                         AND ID        != '" . $rec['ID'] . "' 
+         $sqlQuery = "SELECT *
+                        FROM gpslog
+                       WHERE DEVICE_ID = '" . $device['ID'] . "'
+                         AND ID        != '" . $rec['ID'] . "'
                        ORDER BY ADDED DESC
                        LIMIT 1";
-         
+
          $tmp = SQLSelectOne($sqlQuery);
          
          if ($tmp['LOCATION_ID'] != $locations[$i]['ID'])
          {
             //Debmes("Device (" . $device['TITLE'] . ") ENTERED location " . $locations[$i]['TITLE']);
-            // entered location
-            $sqlQuery = "SELECT * 
-                           FROM gpsactions 
-                          WHERE LOCATION_ID = '" . $locations[$i]['ID'] . "' 
-                            AND ACTION_TYPE = 1 
-                            AND USER_ID     = '" . $device['USER_ID'] . "'";
             
+            // entered location
+            $sqlQuery = "SELECT *
+                           FROM gpsactions
+                          WHERE LOCATION_ID = '" . $locations[$i]['ID'] . "'
+                            AND ACTION_TYPE = 1
+                            AND USER_ID     = '" . $device['USER_ID'] . "'";
+
             $gpsaction = SQLSelectOne($sqlQuery);
-     
+            
             if ($gpsaction['ID'])
             {
                $gpsaction['EXECUTED'] = date('Y-m-d H:i:s');
-               $gpsaction['LOG'] = $gpsaction['EXECUTED'] . " Executed\n" . $gpsaction['LOG'];
-      
+               $gpsaction['LOG']      = $gpsaction['EXECUTED'] . " Executed\n" . $gpsaction['LOG'];
+               
                SQLUpdate('gpsactions', $gpsaction);
-      
+               
                if ($gpsaction['SCRIPT_ID'])
                {
                   runScript($gpsaction['SCRIPT_ID']);
@@ -240,9 +270,9 @@ if (isset($_REQUEST['latitude']))
                {
                   try
                   {
-                     $code = $gpsaction['CODE'];
+                     $code    = $gpsaction['CODE'];
                      $success = eval($code);
-                   
+
                      if ($success === false)
                      {
                         DebMes("Error in GPS action code: " . $code);
@@ -260,34 +290,35 @@ if (isset($_REQUEST['latitude']))
       }
       else
       {
-         $sqlQuery = "SELECT * 
-                        FROM gpslog 
-                       WHERE DEVICE_ID = '" . $device['ID'] . "' 
-                         AND ID        != '" . $rec['ID'] . "' 
-                       ORDER BY ADDED DESC 
+         $sqlQuery = "SELECT *
+                        FROM gpslog
+                       WHERE DEVICE_ID = '" . $device['ID'] . "'
+                         AND ID        != '" . $rec['ID'] . "'
+                       ORDER BY ADDED DESC
                        LIMIT 1";
-         
+
          $tmp = SQLSelectOne($sqlQuery);
-    
+         
          if ($tmp['LOCATION_ID'] == $locations[$i]['ID'])
          {
             //Debmes("Device (" . $device['TITLE'] . ") LEFT location " . $locations[$i]['TITLE']);
+            
             // left location
-            $sqlQuery = "SELECT * 
-                           FROM gpsactions 
-                          WHERE LOCATION_ID = '" . $locations[$i]['ID'] . "' 
-                            AND ACTION_TYPE = 0 
+            $sqlQuery = "SELECT *
+                           FROM gpsactions
+                          WHERE LOCATION_ID = '" . $locations[$i]['ID'] . "'
+                            AND ACTION_TYPE = 0
                             AND USER_ID     = '" . $device['USER_ID'] . "'";
             
             $gpsaction = SQLSelectOne($sqlQuery);
-     
+            
             if ($gpsaction['ID'])
             {
                $gpsaction['EXECUTED'] = date('Y-m-d H:i:s');
-               $gpsaction['LOG'] = $gpsaction['EXECUTED'] . " Executed\n" . $gpsaction['LOG'];
-      
+               $gpsaction['LOG']      = $gpsaction['EXECUTED'] . " Executed\n" . $gpsaction['LOG'];
+               
                SQLUpdate('gpsactions', $gpsaction);
-     
+               
                if ($gpsaction['SCRIPT_ID'])
                {
                   runScript($gpsaction['SCRIPT_ID']);
@@ -296,7 +327,7 @@ if (isset($_REQUEST['latitude']))
                {
                   try
                   {
-                     $code = $gpsaction['CODE'];
+                     $code    = $gpsaction['CODE'];
                      $success = eval($code);
                      
                      if ($success === false)
@@ -316,7 +347,12 @@ if (isset($_REQUEST['latitude']))
 if ($user['LINKED_OBJECT'] && !$location_found)
    setGlobal($user['LINKED_OBJECT'] . '.seenAt', '');
 
-$tmp = SQLSelectOne("SELECT *, DATE_FORMAT(ADDED, '%H:%i') as DAT FROM shouts ORDER BY ADDED DESC LIMIT 1");
+$sqlQuery = "SELECT *, DATE_FORMAT(ADDED, '%H:%i') as DAT
+               FROM shouts
+              ORDER BY ADDED DESC
+              LIMIT 1";
+
+$tmp = SQLSelectOne($sqlQuery);
 
 if (!headers_sent())
 {
@@ -325,9 +361,13 @@ if (!headers_sent())
 }
 
 if (defined('BTRACED'))
+{
    echo "OK";
+}
 elseif ($tmp['MESSAGE'] != '')
+{
    echo ' ' . $tmp['DAT'] . ' ' . transliterate($tmp['MESSAGE']);
+}
 
 // closing database connection
 $db->Disconnect();
@@ -335,19 +375,19 @@ $db->Disconnect();
 endMeasure('TOTAL'); // end calculation of execution time
 
 /**
- * Calculate distance between two coords
- * @param mixed $latA Point A Latitude
- * @param mixed $lonA Point A Longitude
- * @param mixed $latB Point B Latutude
- * @param mixed $lonB Point B Longitude
+ * Calculate distance between two GPS coordinates
+ * @param mixed $latA First coord latitude
+ * @param mixed $lonA First coord longitude
+ * @param mixed $latB Second coord latitude
+ * @param mixed $lonB Second coord longitude
  * @return double
  */
 function calculateTheDistance($latA, $lonA, $latB, $lonB)
 {
    define('EARTH_RADIUS', 6372795);
    
-   $lat1 = $latA * M_PI / 180;
-   $lat2 = $latB * M_PI / 180;
+   $lat1  = $latA * M_PI / 180;
+   $lat2  = $latB * M_PI / 180;
    $long1 = $lonA * M_PI / 180;
    $long2 = $lonB * M_PI / 180;
 
@@ -355,7 +395,8 @@ function calculateTheDistance($latA, $lonA, $latB, $lonB)
    $cl2 = cos($lat2);
    $sl1 = sin($lat1);
    $sl2 = sin($lat2);
-   $delta = $long2 - $long1;
+
+   $delta  = $long2 - $long1;
    $cdelta = cos($delta);
    $sdelta = sin($delta);
 
@@ -363,7 +404,8 @@ function calculateTheDistance($latA, $lonA, $latB, $lonB)
    $x = $sl1 * $sl2 + $cl1 * $cl2 * $cdelta;
 
    $ad = atan2($y, $x);
-   $dist = $ad * EARTH_RADIUS;
+   
+   $dist = round($ad * EARTH_RADIUS);
 
-   return round($dist);
+   return $dist;
 }
