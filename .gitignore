@@ -12,3 +12,4 @@ reboot
 *.suo
 *.phpproj.user
 *.orig
+*.pdb
