@@ -88,9 +88,9 @@
   
   [#if "<#ACTION#>"=="admin"#]
  
-   <a class="btn btn-default btn-sm" href="?data_source=<#DATA_SOURCE#>&view_mode=edit_gpsactions&id=[#ID#]"><i class="glyphicon glyphicon-pencil"></i></a>
+           <a class="btn btn-default btn-sm" href="?data_source=<#DATA_SOURCE#>&view_mode=edit_gpsactions&id=[#ACTION_ID#]"><i class="glyphicon glyphicon-pencil"></i></a>
   
-    <a class="btn btn-default btn-sm" href="?data_source=<#DATA_SOURCE#>&view_mode=delete_gpsactions&id=[#ID#]" onClick="return confirm('<#LANG_ARE_YOU_SURE#>')"><i class="glyphicon glyphicon-remove"></i></a>
+           <a class="btn btn-default btn-sm" href="?data_source=<#DATA_SOURCE#>&view_mode=delete_gpsactions&id=[#ACTION_ID#]" onclick="return confirm('<#LANG_ARE_YOU_SURE#>')"><i class="glyphicon glyphicon-remove"></i></a>
    
   [#endif ACTION#]
  
