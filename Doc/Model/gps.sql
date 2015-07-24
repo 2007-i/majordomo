@@ -24,13 +24,20 @@ create table DEVICE
    DEVICE_ID            INT(10) not null /* ID устройства */,
    TYPE_ID              INT(10) not null /* Тип устройства */,
    DEVICE_NAME          VARCHAR(64) not null /* Наименование */,
-   USER_ID              INT(10) /* ID пользователя */,
+   USER_ID              int(10) not null /* ID Пользователя */,
+   DEVICE_CODE          VARCHAR(64) not null /* Код устройства */,
+   LM_DATE              DATETIME not null /* Дата модиф. */,
    primary key (DEVICE_ID),
-   key AK_DEVICE (TYPE_ID, DEVICE_NAME)
+   key AK_DEVICE (TYPE_ID, DEVICE_NAME),
+   unique key AK_DEVICE_CODE (DEVICE_CODE)
 );
 
 alter table DEVICE add constraint FK_DEVICE_TYPE__TYPE_ID foreign key (TYPE_ID)
       references DEVICE_TYPE (TYPE_ID) on delete restrict on update restrict;
+
+alter table DEVICE add constraint FK_USERS__USER_ID foreign key (USER_ID)
+      references users (ID) on delete restrict on update restrict;
+
 
 	  
 drop table if exists GPS_DEVICE;

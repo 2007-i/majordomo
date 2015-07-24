@@ -478,11 +478,11 @@ EOD;
    {
       $sqlQuery = "select TYPE_ID
                      from DEVICE_TYPE
-                    where TYPE_NAME = '" . GPS_DEVICE_TYPE . "'";
+                    where TYPE_NAME = '" . self::GPS_DEVICE_TYPE . "'";
 
       $deviceType = SQLSelectOne($sqlQuery);
       
-      return $deviceType[0];
+      return $deviceType['TYPE_ID'];
    }
 
    /**
@@ -578,6 +578,72 @@ EOD;
 
       return $action;
    }
+
+   /**
+    * Select Device Info by ID
+    * @param mixed $deviceID Device ID
+    * @return array|bool
+    */
+   public function GetDeviceByID($deviceID)
+   {
+      if (!isset($deviceID) || empty($deviceID))
+         return false;
+
+      $sqlQuery = "select d.DEVICE_ID, d.TYPE_ID, d.DEVICE_NAME, d.DEVICE_CODE, d.USER_ID, g.LATITUDE, g.LONGITUDE, g.LM_DATE
+                     from DEVICE d
+                     left join GPS_DEVICE g on (g.DEVICE_ID = d.DEVICE_ID)
+                    where d.DEVICE_ID = " . $deviceID;
+      
+      $device = SQLSelectOne($sqlQuery);
+
+      return $device;
+   }
+
+
+   public function SetGpsDevice($rec)
+   {
+      $deviceTypeID = $this->GetDeviceType();
+      DebMes("type: " . $deviceTypeID);
+      $rec['TYPE_ID'] = $deviceTypeID;
+      
+      $deviceID = SQLInsert('DEVICE', $rec);
+
+      return $deviceID;
+   }
+
+   /**
+    * Update Gps device
+    * @param mixed $deviceID    Device ID
+    * @param mixed $deviceName  Device Name
+    * @param mixed $userID      User ID
+    * @return int
+    */
+   public function UpdateGpsDevice($deviceID, $deviceName, $deviceCode, $userID)
+   {
+      $deviceTypeID = $this->GetDeviceType();
+      $obj["TYPE_ID"]     = $deviceTypeID;
+      $obj["DEVICE_NAME"] = $deviceName;
+      $obj["USER_ID"]     = $userID;
+      $obj["DEVICE_ID"]   = $deviceID;
+      $obj["LM_DATE"]     = date("Y-m-d H:i:s");
+
+      $isUpdated = SQLUpdate("DEVICE", $obj, "DEVICE_ID");
+
+      return $isUpdated;
+   }
+
+   public function SelectGpsDevices()
+   {
+      $sqlQuery = "select d.DEVICE_ID, d.TYPE_ID, d.DEVICE_NAME, d.DEVICE_CODE, d.USER_ID, g.LATITUDE, g.LONGITUDE, g.LM_DATE
+                     from DEVICE d
+                     left join GPS_DEVICE g on (g.DEVICE_ID = d.DEVICE_ID)
+                    order by DEVICE_NAME desc";
+      
+      $device = SQLSelect($sqlQuery);
+
+      return $device;
+   }
+   
 
 }
 /*

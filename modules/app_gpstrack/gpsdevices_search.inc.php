@@ -13,12 +13,12 @@ $qry = "1";
 
 // search filters
 //searching 'TITLE' (varchar)
-global $title;
+global $device_name;
 
-if ($title != '')
+if ($device_name != '')
 {
-   $qry .= " and DEVICE_NAME LIKE '%" . DBSafe($title) . "%'";
-   $out['DEVICE_NAME'] = $title;
+   $qry .= " and DEVICE_NAME LIKE '%" . DBSafe($device_name) . "%'";
+   $out['DEVICE_NAME'] = $device_name;
 }
 
 if (IsSet($this->user_id))
@@ -55,18 +55,18 @@ if (!$sortby_gpsdevices)
 }
 else
 {
-   if ($session->data['gpsdevices_sort']==$sortby_gpsdevices)
+   if ($session->data['gpsdevices_sort'] == $sortby_gpsdevices)
    {
       if (Is_Integer(strpos($sortby_gpsdevices, ' DESC')))
       {
-         $sortby_gpsdevices=str_replace(' DESC', '', $sortby_gpsdevices);
+         $sortby_gpsdevices = str_replace(' DESC', '', $sortby_gpsdevices);
       }
       else
       {
-         $sortby_gpsdevices=$sortby_gpsdevices." DESC";
+         $sortby_gpsdevices = $sortby_gpsdevices." DESC";
       }
    }
-   $session->data['gpsdevices_sort']=$sortby_gpsdevices;
+   $session->data['gpsdevices_sort'] = $sortby_gpsdevices;
 }
 
 if (!$sortby_gpsdevices)
@@ -75,7 +75,9 @@ if (!$sortby_gpsdevices)
 $out['SORTBY'] = $sortby_gpsdevices;
 
 // SEARCH RESULTS
-$res = SQLSelect("SELECT * FROM gpsdevices WHERE $qry ORDER BY ".$sortby_gpsdevices);
+$res = $this->SelectGpsDevices();
+
+//$res = SQLSelect("SELECT * FROM gpsdevices WHERE $qry ORDER BY ".$sortby_gpsdevices);
 
 if (isset($res[0]['DEVICE_ID']))
 {
@@ -85,8 +87,8 @@ if (isset($res[0]['DEVICE_ID']))
    for($i = 0; $i < $total; $i++)
    {
       // some action for every record if required
-      $tmp = explode(' ', $res[$i]['UPDATED']);
-      $res[$i]['UPDATED'] = fromDBDate($tmp[0])." ".$tmp[1];
+      $tmp = explode(' ', $res[$i]['LM_DATE']);
+      $res[$i]['LM_DATE'] = fromDBDate($tmp[0])." ".$tmp[1];
    }
 
    $out['RESULT']=$res;
