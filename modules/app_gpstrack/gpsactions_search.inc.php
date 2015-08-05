@@ -6,13 +6,12 @@ global $session;
 
 if ($this->owner->name == 'panel')
 {
-   $out['CONTROLPANEL']=1;
+   $out['CONTROLPANEL'] = 1;
 }
 
-$qry="1";
+$qry = "1";
 
 // search filters
-
 if (isset($this->location_id))
 {
    $location_id = $this->location_id;
@@ -56,7 +55,8 @@ else
    $session->data['gpsactions_qry']=$qry;
 }
 
-if (!$qry) $qry="1";
+if (!$qry)
+   $qry = "1";
 
 // FIELDS ORDER
 global $sortby_gpsactions;
@@ -79,18 +79,23 @@ else
 }
 $sortby_gpsactions="gpsactions.LOCATION_ID, gpsactions.USER_ID, ACTION_TYPE";
 $out['SORTBY']=$sortby_gpsactions;
+
 // SEARCH RESULTS
-$res = SQLSelect("SELECT gpsactions.*, gpslocations.TITLE as LOCATION_TITLE, users.NAME as USER_NAME, scripts.TITLE as SCRIPT_TITLE FROM gpsactions LEFT JOIN gpslocations ON gpslocations.ID=gpsactions.LOCATION_ID LEFT JOIN users ON gpsactions.USER_ID=users.ID LEFT JOIN scripts ON scripts.ID=gpsactions.SCRIPT_ID WHERE $qry ORDER BY ".$sortby_gpsactions);
-if ($res[0]['ID'])
+
+//$res = SQLSelect("SELECT gpsactions.*, gpslocations.TITLE as LOCATION_TITLE, users.NAME as USER_NAME, scripts.TITLE as SCRIPT_TITLE FROM gpsactions LEFT JOIN gpslocations ON gpslocations.ID=gpsactions.LOCATION_ID LEFT JOIN users ON gpsactions.USER_ID=users.ID LEFT JOIN scripts ON scripts.ID=gpsactions.SCRIPT_ID WHERE $qry ORDER BY ".$sortby_gpsactions);
+$gpsActions     = $this->SelectGpsActions();
+$gpsActionCount = count($gpsActions);
+
+DebMes("CNT: " . $gpsActionCount);
+if ($gpsActionCount > 0)
 {
-   colorizeArray($res);
-   $total=count($res);
-   for($i=0;$i<$total;$i++)
-   {
-      // some action for every record if required
-      $tmp=explode(' ', $res[$i]['EXECUTED']);
-      $res[$i]['EXECUTED']=fromDBDate($tmp[0])." ".$tmp[1];
-   }
-   $out['RESULT']=$res;
+   colorizeArray($gpsActions);
+  
+   //for($i = 0; $i < $gpsActionCount; $i++)
+   //{
+   //   // some action for every record if required
+   //   $tmp = explode(' ', $res[$i]['EXECUTED']);
+   //   $res[$i]['EXECUTED'] = fromDBDate($tmp[0])." ".$tmp[1];
+   //}
+   $out['RESULT'] = $gpsActions;
 }
-?>

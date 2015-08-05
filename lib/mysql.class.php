@@ -486,12 +486,11 @@ function SQLInsertUpdate($table, &$record, $ndx = 'ID')
 function fromDBDate($source, $delim = '-', $dst_delim = '/')
 {
    $tmp = explode($delim, $source);
-   
-   for($i = 0; $i < count($tmp); $i++)
+   $cnt = count($tmp);
+
+   for($i = 0; $i < $cnt; $i++)
    {
-      if ($tmp[$i] < 10) 
-         $tmp[$i] = '0' . (int)$tmp[$i];
-      
+      $tmp[$i] = str_pad($tmp[$i], 2, STR_PAD_LEFT);
    }
    
    return ($tmp[1]) . $dst_delim . ($tmp[2]) . $dst_delim . ($tmp[0]);

@@ -24,9 +24,11 @@ create table DEVICE
    DEVICE_ID            INT(10) not null /* ID устройства */,
    TYPE_ID              INT(10) not null /* Тип устройства */,
    DEVICE_NAME          VARCHAR(64) not null /* Наименование */,
-   USER_ID              int(10) not null /* ID Пользователя */,
    DEVICE_CODE          VARCHAR(64) not null /* Код устройства */,
+   USER_ID              INT(10) not null /* ID пользователя */,
    LM_DATE              DATETIME not null /* Дата модиф. */,
+   FLAG_DEL             VARCHAR(1) not null /* Флаг: удалено */,
+   FLAG_GPS             VARCHAR(1) not null /* Флаг: GPS */,
    primary key (DEVICE_ID),
    key AK_DEVICE (TYPE_ID, DEVICE_NAME),
    unique key AK_DEVICE_CODE (DEVICE_CODE)
@@ -35,8 +37,7 @@ create table DEVICE
 alter table DEVICE add constraint FK_DEVICE_TYPE__TYPE_ID foreign key (TYPE_ID)
       references DEVICE_TYPE (TYPE_ID) on delete restrict on update restrict;
 
-alter table DEVICE add constraint FK_USERS__USER_ID foreign key (USER_ID)
-      references users (ID) on delete restrict on update restrict;
+
 
 
 	  
@@ -82,13 +83,14 @@ drop table if exists GPS_ACTION_TYPE;
 /*==============================================================*/
 create table GPS_ACTION_TYPE
 (
-   TYPE_ID              INT(10) not null auto_increment /* Тип действия */,
+   TYPE_ID              INT(10) not null /* Тип действия */,
    TYPE_NAME            VARCHAR(32) not null /* Название */,
    LM_DATE              DATETIME not null /* Дата модиф. */,
    TYPE_DESC            VARCHAR(255) /* Описание */,
    primary key (TYPE_ID),
-   key AK_GPS_ACTION_TYPE (TYPE_NAME)
-);
+   unique key AK_GPS_ACTION_TYPE (TYPE_NAME)
+)
+type = InnoDB;
 
 INSERT INTO GPS_ACTION_TYPE (TYPE_ID, TYPE_NAME, LM_DATE, TYPE_DESC)
 VALUES (NULL, 'Entering', '2015-07-16 00:00:00', 'GPS координаты устройства попадает в указанную границу '),

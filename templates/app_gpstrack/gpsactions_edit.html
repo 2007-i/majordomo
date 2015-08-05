@@ -1,122 +1,123 @@
 <!-- Table 'gpsactions' edit -->
 <ul class="breadcrumb">
-   <li> 
+   <li>
       <a href="?"><#LANG_HOME#></a>
    </li>
    <span class="divider">/</span>
    <li class="active">
       [#if ACTION_ID=""#]
-         <#LANG_NEW_RECORD#>
-      [#else#]
+      <#LANG_NEW_RECORD#>
+         [#else#]
          <#LANG_EDIT_RECORD#>
-      [#endif#]
+            [#endif#]
    </li>
 </ul>
-
 <form action="?" method="post" enctype="multipart/form-data" name="frmEdit" class="form-horizontal">
    [#if OK#] <div class="alert alert-success"><#LANG_DATA_SAVED#></div> [#endif OK#]
    [#if ERR#] <div class="alert alert-danger"><#LANG_FILLOUT_REQURED#></div> [#endif ERR#]
 
    <!-- LOCATION_ID (select) -->
    [#if !IS_SET_LOCATION_ID#]
-      <div class="form-group ">
-         <label class="col-lg-4 control-label" for="inputTitle"><#LANG_LOCATION#>:<font color="red">*</font></label>
-         <div class="col-lg-5">
-            <select name="location_id" class="form-control [#if ERR_LOCATION_ID#]alert-danger[#endif#]">
-               <option value="">select
-               [#begin LOCATION_ID_OPTIONS#]<option value="[#POI_ID#]" [#if selected#] selected[#endif#]>[#POI_NAME#][#end LOCATION_ID_OPTIONS#]
-            </select>
-         </div>
+   <div class="form-group ">
+      <label class="col-lg-4 control-label" for="inputTitle"><#LANG_LOCATION#>:<font color="red">*</font></label>
+      <div class="col-lg-5">
+         <select name="location_id" class="form-control [#if ERR_LOCATION_ID#]alert-danger[#endif#]">
+            <option value="">
+               select
+               [#begin LOCATION_ID_OPTIONS#]
+            <option value="[#POI_ID#]" [#if selected#] selected[#endif#]>[#POI_NAME#][#end LOCATION_ID_OPTIONS#]
+         </select>
       </div>
+   </div>
    [#endif IS_SET_LOCATION_ID#]
 
-   <!-- USER_ID (select) -->
-   [#if !IS_SET_USER_ID#]
-      <div class="form-group ">
-         <label class="col-lg-4 control-label" for="inputTitle"><#LANG_USER#>:<font color="red">*</font></label>
-         <div class="col-lg-5">
-            <select name="user_id" class="form-control [#if ERR_USER_ID#]alert-danger[#endif#]">
-               <option value="">select
-               [#begin USER_ID_OPTIONS#]<option value="[#ID#]"[#if SELECTED#] selected[#endif#]>[#NAME#][#end USER_ID_OPTIONS#]
-            </select>
-         </div>
+   <!-- DEVICE List (select) -->
+   <div class="form-group ">
+      <label class="col-lg-4 control-label" for="inputTitle"><#LANG_DEVICES#>:<font color="red">*</font></label>
+      <div class="col-lg-5">
+         <select name="device_id" class="form-control [#if ERR_DEVICE_ID#]alert-danger[#endif#]">
+            [#begin DEVICE_SELECT_BOX#]
+               <option value="[#DEVICE_ID#]" [#if SELECTED#] selected[#endif#]>[#DEVICE_NAME#] ([#USER_NAME#])</option>
+            [#end DEVICE_SELECT_BOX#]
+         </select>
       </div>
-   [#endif IS_SET_USER_ID#]
+   </div>
+   
 
    <!-- ACTION_TYPE (select) -->
    <div class="form-group ">
       <label class="col-lg-4 control-label" for="inputTitle"><#LANG_ACTION_TYPE#>:<font color="red">*</font></label>
       <div class="col-lg-5">
          <select name="action_type" class="form-control [#if ERR_ACTION_TYPE#]alert-danger[#endif#]">
-            <option value="">select
-            [#begin ACTION_TYPE_OPTIONS#]<option value="[#TYPE_ID#]" [#if selected#] selected[#endif#]>[#TYPE_NAME#][#end ACTION_TYPE_OPTIONS#]
+            <option value="">
+               select
+               [#begin ACTION_TYPE_OPTIONS#]
+            <option value="[#TYPE_ID#]" [#if selected#] selected[#endif#]>[#TYPE_NAME#][#end ACTION_TYPE_OPTIONS#]
          </select>
       </div>
    </div>
 
+   [#if ID!=""#]
+   <!-- SCRIPT_ID (select) -->
+   [#if !IS_SET_SCRIPT_ID#]
+   <div class="form-group ">
+      <label class="col-lg-4 control-label" for="inputTitle"><#LANG_SCRIPT#>:<font color="red">*</font></label>
+      <div class="col-lg-5">
+         <select name="script_id" class="form-control [#if ERR_SCRIPT_ID#]alert-danger[#endif#]">
+            <option value="">
+               select
+               [#begin SCRIPT_ID_OPTIONS#]
+            <option value="[#ID#]" [#if SELECTED#] selected[#endif#]>
+               [#TITLE#]
+               [#end SCRIPT_ID_OPTIONS#]
+         </select>
 
-[#if ID!=""#]
-<!-- SCRIPT_ID (select) -->
-[#if !IS_SET_SCRIPT_ID#]
-<div class="form-group ">
-        <label class="col-lg-4 control-label" for="inputTitle"><#LANG_SCRIPT#>:<font color="red">*</font></label>
-        <div class="col-lg-5">
-			<select name="script_id" class="form-control [#if ERR_SCRIPT_ID#]alert-danger[#endif#]">
-			<option value="">select
-  [#begin SCRIPT_ID_OPTIONS#]<option value="[#ID#]"[#if SELECTED#] selected[#endif#]>[#TITLE#]
-  [#end SCRIPT_ID_OPTIONS#]
-			 </select>
-		
-		</div>
-</div>
+      </div>
+   </div>
+   [#endif IS_SET_SCRIPT_ID#]
+   <!-- CODE (text) -->
+   <div class="form-group ">
+      <label class="col-lg-4 control-label" for="inputTitle"><#LANG_CODE#>:</label>
+      <div class="col-lg-5 [#if ERR_CODE#]alert-danger[#endif#]">
+         [#if ERRORS!=""#]<br><font color='red'>[#ERRORS#]</font><br>[#endif ERRORS#]
+         [#module name="blockly_code" system_name="gpsaction<#ID#>
+            " code_field="code" action=""#]
+            <div id="code_area">
+               <textarea name="code" id="code" rows=30 cols=100 class=" form-control field span8">[#CODE#]</textarea>
+            </div>
 
-[#endif IS_SET_SCRIPT_ID#]
-<!-- CODE (text) -->
-<div class="form-group ">
-        <label class="col-lg-4 control-label" for="inputTitle"><#LANG_CODE#>:</label>
-        <div class="col-lg-5 [#if ERR_CODE#]alert-danger[#endif#]">
-			[#if ERRORS!=""#]<br><font color='red'>[#ERRORS#]</font><br>[#endif ERRORS#]
-			 [#module name="blockly_code" system_name="gpsaction<#ID#>" code_field="code" action=""#]
-			 <div id="code_area">
-			  <textarea name="code" id="code" rows=30 cols=100 class=" form-control field span8">[#CODE#]</textarea>
-			 </div>
-		
-		</div>
-</div>
+      </div>
+   </div>
+   <div class="form-group ">
+      <label class="col-lg-4 control-label" for="inputTitle"><#LANG_LOG#>:</label>
+      <div class="col-lg-5 [#if ERR_LOG#]alert-danger[#endif#]">
+         <pre>[#LOG#]</pre>
+      </div>
+   </div>
+   <div class="form-group ">
+      <label class="col-lg-4 control-label" for="inputTitle"><#LANG_EXECUTED#>:</label>
+      <div class="col-lg-5 [#if ERR_EXECUTED#]alert-danger[#endif#]">
+         <pre>[#EXECUTED#]</pre>
+      </div>
+   </div>
+   [#endif ID#]
 
-<div class="form-group ">
-        <label class="col-lg-4 control-label" for="inputTitle"><#LANG_LOG#>:</label>
-        <div class="col-lg-5 [#if ERR_LOG#]alert-danger[#endif#]">
-			<pre>[#LOG#]</pre>
-		</div>
-</div>
-<div class="form-group ">
-        <label class="col-lg-4 control-label" for="inputTitle"><#LANG_EXECUTED#>:</label>
-        <div class="col-lg-5 [#if ERR_EXECUTED#]alert-danger[#endif#]">
-			<pre>[#EXECUTED#]</pre>
-		</div>
-</div>
-
-[#endif ID#]
-
-<div class="form-group ">
-        <label class="col-lg-4 control-label" for="inputTitle">&nbsp;</label>
-        <div class="col-lg-5">
-			[#if ACTION_ID!=""#]
- <input type="submit" name="subm" value="<#LANG_SUBMIT#>" class="btn btn-default btn-primary">
- [#else ACTION_ID#]
- <input type="submit" name="subm" value="<#LANG_ADD#>" class="btn btn-default btn-primary">
- [#endif ACTION_ID#]
- &nbsp;
- <a href="?data_source=<#DATA_SOURCE#>" class="btn btn-default"><#LANG_CANCEL#></a>
-		</div>
-</div>
-
+   <div class="form-group ">
+      <label class="col-lg-4 control-label" for="inputTitle">&nbsp;</label>
+      <div class="col-lg-5">
+         [#if ACTION_ID!=""#]
+         <input type="submit" name="subm" value="<#LANG_SUBMIT#>" class="btn btn-default btn-primary">
+         [#else ACTION_ID#]
+         <input type="submit" name="subm" value="<#LANG_ADD#>" class="btn btn-default btn-primary">
+         [#endif ACTION_ID#]
+         &nbsp;
+         <a href="?data_source=<#DATA_SOURCE#>" class="btn btn-default"><#LANG_CANCEL#></a>
+      </div>
+   </div>
 
    <input type="hidden" name="id" value="<#ACTION_ID#>">
-<input type="hidden" name="view_mode" value="<#VIEW_MODE#>">
-<input type="hidden" name="edit_mode" value="<#EDIT_MODE#>">
-<input type="hidden" name="mode" value="update">
-<input type="hidden" name="data_source" value="<#DATA_SOURCE#>">
+   <input type="hidden" name="view_mode" value="<#VIEW_MODE#>">
+   <input type="hidden" name="edit_mode" value="<#EDIT_MODE#>">
+   <input type="hidden" name="mode" value="update">
+   <input type="hidden" name="data_source" value="<#DATA_SOURCE#>">
 </form>
-

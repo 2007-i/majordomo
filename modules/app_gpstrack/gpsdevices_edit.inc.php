@@ -1,19 +1,16 @@
 <?php
-/*
- * @version 0.1 (wizard)
- */
+
 if ($this->owner->name=='panel')
 {
    $out['CONTROLPANEL'] = 1;
 }
-
 
 $rec = $this->GetDeviceByID($id);
 
 if ($this->mode == 'update')
 {
    $ok = 1;
-   //updating 'TITLE' (varchar, required)
+
    global $title;
    $rec['DEVICE_NAME'] = $title;
    
@@ -23,7 +20,6 @@ if ($this->mode == 'update')
       $ok = 0;
    }
 
-   //updating 'USER_ID' (select)
    if (isset($this->user_id))
    {
       $rec['USER_ID'] = $this->user_id;
@@ -34,7 +30,6 @@ if ($this->mode == 'update')
       $rec['USER_ID'] = $user_id;
    }
 
-   //updating 'DEVICEID' (varchar)
    global $device_code;
    $rec['DEVICE_CODE'] = $device_code;
    if ($rec['DEVICE_CODE'] == '')
@@ -47,23 +42,18 @@ if ($this->mode == 'update')
    
    if ($ok)
    {
-      if ($rec['DEVICE_ID'])
+      if (isset($rec['DEVICE_ID']) && is_numeric($rec['DEVICE_ID']))
       {
          $isUpdated = $this->UpdateGpsDevice($rec['DEVICE_ID'], $rec['DEVICE_NAME'], $rec['DEVICE_CODE'], $rec['USER_ID']);
       }
       else
       {
          $new_rec = 1;
+
          $rec['DEVICE_ID'] = $this->SetGpsDevice($rec);
       }
 
       $out['OK'] = 1;
-
-      //if ($rec['DEVICE_ID'])
-      //{
-      //   SQLExec("UPDATE gpslog SET DEVICE_ID='".$rec['ID']."' WHERE DEVICE_ID=0 AND DEVICEID='".DBSafe($rec['DEVICEID'])."'");
-      //}
-
    }
    else
    {
@@ -72,64 +62,22 @@ if ($this->mode == 'update')
 }
 
 //options for 'USER_ID' (select)
-$tmp = SQLSelect("SELECT ID, NAME FROM users ORDER BY NAME");
+$sqlQuery = "SELECT ID, NAME
+               FROM users
+              ORDER BY NAME";
+
+$tmp         = SQLSelect($sqlQuery);
 $users_total = count($tmp);
 
 for($users_i = 0; $users_i < $users_total; $users_i++)
 {
    $user_id_opt[$tmp[$users_i]['ID']] = $tmp[$users_i]['NAME'];
-}
 
-for($i = 0; $i < $users_total; $i++)
-{
-   if ($rec['USER_ID'] == $tmp[$i]['ID'])
-      $tmp[$i]['SELECTED'] = 1;
+   if ($rec['USER_ID'] == $tmp[$users_i]['ID'])
+      $tmp[$users_i]['SELECTED'] = 1;
 }
 
 $out['USER_ID_OPTIONS'] = $tmp;
-
-if ($rec['LM_DATE'] != '')
-{
-   $tmp = explode(' ', $rec['LM_DATE']);
-   $out['UPDATED_DATE'] = fromDBDate($tmp[0]);
-   $tmp2 = explode(':', $tmp[1]);
-   $updated_hours = $tmp2[0];
-   $updated_minutes = $tmp2[1];
-}
-
-for($i = 0; $i < 60; $i++)
-{
-   $title = $i;
-   
-   if ($i < 10)
-      $title = "0$i";
-   
-   if ($title == $updated_minutes)
-   {
-      $out['UPDATED_MINUTES'][] = array('TITLE'=>$title, 'SELECTED' => 1);
-   }
-   else
-   {
-      $out['UPDATED_MINUTES'][] = array('TITLE' => $title);
-   }
-}
-
-for($i = 0; $i < 24; $i++)
-{
-   $title = $i;
-   
-   if ($i < 10)
-      $title = "0$i";
-   
-   if ($title == $updated_hours)
-   {
-      $out['UPDATED_HOURS'][] = array('TITLE' => $title, 'SELECTED' => 1);
-   }
-   else
-   {
-      $out['UPDATED_HOURS'][] = array('TITLE' => $title);
-   }
-}
 
 if (is_array($rec))
 {

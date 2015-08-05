@@ -333,17 +333,28 @@ class app_gpstrack extends module
    function edit_gpsdevices(&$out, $id) {
       require(DIR_MODULES.$this->name.'/gpsdevices_edit.inc.php');
    }
+   
    /**
-    * gpsdevices delete record
-    *
-    * @access public
+    * set flag delete to device
+    * @param mixed $id DeviceID
     */
-   function delete_gpsdevices($id) {
-      $rec=SQLSelectOne("SELECT * FROM gpsdevices WHERE ID='$id'");
-      // some action for related tables
-      SQLExec("DELETE FROM gpslog WHERE DEVICE_ID='".$rec['ID']."'");
-      SQLExec("DELETE FROM gpsdevices WHERE ID='".$rec['ID']."'");
+   function delete_gpsdevices($id)
+   {
+      $sqlQuery = "select *
+                     from DEVICE
+                    where DEVICE_ID = " . $id;
+      $rec = SQLSelectOne($sqlQuery);
+
+      if (isset($rec['DEVICE_ID']))
+      {
+         $sqlQuery = "update DEVICE
+                         set FLAG_DEL = 'Y',
+                             LM_DATE  = NOW()
+                       where DEVICE_ID = " . $id;
+         SQLExec($sqlQuery);
+      }
    }
+
    /**
     * gpsactions search
     *
@@ -547,10 +558,7 @@ EOD;
     */
    public function SetAction($object)
    {
-
-      DebMes($object);
       $actitonID = SQLInsert('GPS_ACTION', $object);
-      DebMes("set: " . $actitonID);
       return $actitonID;
    }
 
@@ -586,14 +594,14 @@ EOD;
     */
    public function GetDeviceByID($deviceID)
    {
-      if (!isset($deviceID) || empty($deviceID))
+      if (!isset($deviceID) && empty($deviceID))
          return false;
 
       $sqlQuery = "select d.DEVICE_ID, d.TYPE_ID, d.DEVICE_NAME, d.DEVICE_CODE, d.USER_ID, g.LATITUDE, g.LONGITUDE, g.LM_DATE
                      from DEVICE d
                      left join GPS_DEVICE g on (g.DEVICE_ID = d.DEVICE_ID)
                     where d.DEVICE_ID = " . $deviceID;
-      
+
       $device = SQLSelectOne($sqlQuery);
 
       return $device;
@@ -602,8 +610,7 @@ EOD;
 
    public function SetGpsDevice($rec)
    {
-      $deviceTypeID = $this->GetDeviceType();
-      DebMes("type: " . $deviceTypeID);
+      $deviceTypeID   = $this->GetDeviceType();
       $rec['TYPE_ID'] = $deviceTypeID;
       
       $deviceID = SQLInsert('DEVICE', $rec);
@@ -621,6 +628,7 @@ EOD;
    public function UpdateGpsDevice($deviceID, $deviceName, $deviceCode, $userID)
    {
       $deviceTypeID = $this->GetDeviceType();
+
       $obj["TYPE_ID"]     = $deviceTypeID;
       $obj["DEVICE_NAME"] = $deviceName;
       $obj["USER_ID"]     = $userID;
@@ -634,21 +642,37 @@ EOD;
 
    public function SelectGpsDevices()
    {
-      $sqlQuery = "select d.DEVICE_ID, d.TYPE_ID, d.DEVICE_NAME, d.DEVICE_CODE, d.USER_ID, g.LATITUDE, g.LONGITUDE, g.LM_DATE
+      $sqlQuery = "select d.DEVICE_ID, d.TYPE_ID, d.DEVICE_NAME, d.DEVICE_CODE, d.USER_ID, u.NAME USER_NAME, g.LATITUDE, g.LONGITUDE, g.LM_DATE
                      from DEVICE d
                      left join GPS_DEVICE g on (g.DEVICE_ID = d.DEVICE_ID)
+                     left join users u on (d.USER_ID = u.ID)
+                    where d.FLAG_DEL = 'N'
+                      and d.FLAG_GPS = 'Y'
                     order by DEVICE_NAME desc";
       
       $device = SQLSelect($sqlQuery);
 
       return $device;
    }
-   
 
+   /**
+    * List of gps actions
+    */
+   public function SelectGpsActions()
+   {
+      $sqlQuery = "select a.ACTION_ID, a.POI_ID, l.POI_NAME, d.DEVICE_ID, d.DEVICE_NAME, a.TYPE_ID, t.TYPE_NAME, SCRIPT_ID, CODE, LOG, EXECUTED,
+                          d.USER_ID, (select USERNAME
+                                        from users u
+                                       where u.ID = d.USER_ID
+                                     ) USER_NAME
+                     from GPS_ACTION a, GPS_LOCATION l, DEVICE d, GPS_ACTION_TYPE t
+                    where a.POI_ID    = l.POI_ID
+                      and a.DEVICE_ID = d.DEVICE_ID
+                      and a.TYPE_ID   = t.TYPE_ID
+                    order by EXECUTED desc";
+
+      $actions = SQLSelect($sqlQuery);
+
+      return $actions;
+   }
 }
-/*
- *
- * TW9kdWxlIGNyZWF0ZWQgSnVsIDI1LCAyMDExIHVzaW5nIFNlcmdlIEouIHdpemFyZCAoQWN0aXZlVW5pdCBJbmMgd3d3LmFjdGl2ZXVuaXQuY29tKQ==
- *
- */
-?>

@@ -2,7 +2,7 @@
 
 if ($this->owner->name == 'panel')
 {
-   $out['CONTROLPANEL']=1;
+   $out['CONTROLPANEL'] = 1;
 }
 
 if (isset($id) && !empty($id)) 
@@ -26,15 +26,15 @@ if ($this->mode == 'update')
    }
 
    //updating 'USER_ID' (select)
-   //if (isset($this->user_id))
-   //{
-   //   $rec['USER_ID'] = $this->user_id;
-   //}
-   //else
-   //{
-   //   global $user_id;
-   //   $rec['USER_ID'] = $user_id;
-   //}
+   if (isset($this->device_id))
+   {
+      $rec['DEVICE_ID'] = $this->device_id;
+   }
+   else
+   {
+      global $device_id;
+      $rec['DEVICE_ID'] = $device_id;
+   }
 
    //updating 'ACTION_TYPE' (select)
    global $action_type;
@@ -66,6 +66,7 @@ if ($this->mode == 'update')
       {
          DebMes("1. SET");
          $new_rec = 1;
+         
          $rec['ACTION_ID'] = $this->SetAction($rec);
       }
       $out['OK'] = 1;
@@ -94,22 +95,20 @@ for($i = 0; $i < count($tmp); $i++)
 
 $out['LOCATION_ID_OPTIONS'] = $tmp;
 
-
+// Device List
 //options for 'USER_ID' (select)
-$tmp = SQLSelect("SELECT ID, NAME FROM users ORDER BY NAME");
-$users_total = count($tmp);
-for($users_i = 0; $users_i < $users_total; $users_i++)
-{
-   $user_id_opt[$tmp[$users_i]['ID']] = $tmp[$users_i]['NAME'];
-}
+$devices      = $this->SelectGpsDevices();
+$devicesCount = count($devices);
 
-for($i = 0; $i < count($tmp); $i++)
+for($i = 0; $i < $devicesCount; $i++)
 {
-   if ($rec['USER_ID'] == $tmp[$i]['ID'])
-      $tmp[$i]['SELECTED'] = 1;
+   $selectBoxDevices[$devices[$i]['DEVICE_ID']] = $devices[$i]['DEVICE_NAME'];
+  
+   if ($rec['DEVICE_ID'] == $devices[$i]['DEVICE_ID'])
+      $devices[$i]['SELECTED'] = 1;
 }
-
-$out['USER_ID_OPTIONS']=$tmp;
+//USER_ID_OPTIONS
+$out['DEVICE_SELECT_BOX'] = $devices;
 
 
 //options for 'ACTION_TYPE' (select)
