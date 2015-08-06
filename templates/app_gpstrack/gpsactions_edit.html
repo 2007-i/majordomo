@@ -22,10 +22,10 @@
       <label class="col-lg-4 control-label" for="inputTitle"><#LANG_LOCATION#>:<font color="red">*</font></label>
       <div class="col-lg-5">
          <select name="location_id" class="form-control [#if ERR_LOCATION_ID#]alert-danger[#endif#]">
-            <option value="">
-               select
-               [#begin LOCATION_ID_OPTIONS#]
-            <option value="[#POI_ID#]" [#if selected#] selected[#endif#]>[#POI_NAME#][#end LOCATION_ID_OPTIONS#]
+            <option value="">select</option>
+            [#begin POI_SELECT_BOX#]
+            <option value="[#POI_ID#]" [#if SELECTED#] selected[#endif#]>[#POI_NAME#]</option>
+            [#end POI_SELECT_BOX#]
          </select>
       </div>
    </div>
@@ -37,7 +37,7 @@
       <div class="col-lg-5">
          <select name="device_id" class="form-control [#if ERR_DEVICE_ID#]alert-danger[#endif#]">
             [#begin DEVICE_SELECT_BOX#]
-               <option value="[#DEVICE_ID#]" [#if SELECTED#] selected[#endif#]>[#DEVICE_NAME#] ([#USER_NAME#])</option>
+               <option value="[#DEVICE_ID#]" [#if SELECTED#] selected[#endif#]>[#DEVICE_NAME#]</option>
             [#end DEVICE_SELECT_BOX#]
          </select>
       </div>
@@ -49,45 +49,42 @@
       <label class="col-lg-4 control-label" for="inputTitle"><#LANG_ACTION_TYPE#>:<font color="red">*</font></label>
       <div class="col-lg-5">
          <select name="action_type" class="form-control [#if ERR_ACTION_TYPE#]alert-danger[#endif#]">
-            <option value="">
-               select
-               [#begin ACTION_TYPE_OPTIONS#]
-            <option value="[#TYPE_ID#]" [#if selected#] selected[#endif#]>[#TYPE_NAME#][#end ACTION_TYPE_OPTIONS#]
+            <option value="">select</option>
+            [#begin ACTION_TYPE_SELECT_BOX#]
+            <option value="[#TYPE_ID#]" [#if SELECTED#] selected[#endif#]>[#TYPE_NAME#]</option>
+            [#end ACTION_TYPE_SELECT_BOX#]
          </select>
       </div>
    </div>
 
-   [#if ID!=""#]
+   [#if ACTION_ID!=""#]
    <!-- SCRIPT_ID (select) -->
    [#if !IS_SET_SCRIPT_ID#]
    <div class="form-group ">
       <label class="col-lg-4 control-label" for="inputTitle"><#LANG_SCRIPT#>:<font color="red">*</font></label>
       <div class="col-lg-5">
          <select name="script_id" class="form-control [#if ERR_SCRIPT_ID#]alert-danger[#endif#]">
-            <option value="">
-               select
-               [#begin SCRIPT_ID_OPTIONS#]
-            <option value="[#ID#]" [#if SELECTED#] selected[#endif#]>
-               [#TITLE#]
-               [#end SCRIPT_ID_OPTIONS#]
+            <option value="">select</option>
+            [#begin SCRIPT_SELECT_BOX#]
+            <option value="[#SCRIPT_ID#]" [#if SELECTED#] selected[#endif#]>[#SCRIPT_NAME#]</option>
+            [#end SCRIPT_SELECT_BOX#]
          </select>
-
       </div>
    </div>
    [#endif IS_SET_SCRIPT_ID#]
+
    <!-- CODE (text) -->
    <div class="form-group ">
       <label class="col-lg-4 control-label" for="inputTitle"><#LANG_CODE#>:</label>
       <div class="col-lg-5 [#if ERR_CODE#]alert-danger[#endif#]">
          [#if ERRORS!=""#]<br><font color='red'>[#ERRORS#]</font><br>[#endif ERRORS#]
-         [#module name="blockly_code" system_name="gpsaction<#ID#>
-            " code_field="code" action=""#]
-            <div id="code_area">
-               <textarea name="code" id="code" rows=30 cols=100 class=" form-control field span8">[#CODE#]</textarea>
-            </div>
-
+         [#module name="blockly_code" system_name="gpsaction<#ACTION_ID#>" code_field="code" action=""#]
+         <div id="code_area">
+            <textarea name="code" id="code" rows=30 cols=100 class=" form-control field span8">[#CODE#]</textarea>
+         </div>
       </div>
    </div>
+
    <div class="form-group ">
       <label class="col-lg-4 control-label" for="inputTitle"><#LANG_LOG#>:</label>
       <div class="col-lg-5 [#if ERR_LOG#]alert-danger[#endif#]">
@@ -100,7 +97,7 @@
          <pre>[#EXECUTED#]</pre>
       </div>
    </div>
-   [#endif ID#]
+   [#endif ACTION_ID#]
 
    <div class="form-group ">
       <label class="col-lg-4 control-label" for="inputTitle">&nbsp;</label>

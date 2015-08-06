@@ -1,11 +1,120 @@
 <?php
 
+/**
+ * Fill ListBox for POI
+ * @param mixed $curPoiID Current POI
+ * @return array
+ */
+function PreparePoiField($curPoiID)
+{
+   $appGpsTrack = new app_gpstrack();
+   $poi      = $appGpsTrack->SelectLocations('1', "POI_NAME");
+   $poiCount = count($poi);
+
+   $selectBoxPoi = array();
+
+   for($i = 0; $i < $poiCount; $i++)
+   {
+      $poiID   = $poi[$i]['POI_ID'];
+      $poiName = $poi[$i]['POI_NAME'];
+   
+      $selectBoxPoi[$i]['POI_ID']   = $poiID;
+      $selectBoxPoi[$i]['POI_NAME'] = $poiName;
+      
+      if ($curPoiID === $poiID)
+         $selectBoxPoi[$i]['SELECTED'] = 1;
+   }
+
+   return $selectBoxPoi;
+}
+
+/**
+ * Fill ListBox for Device
+ * @param mixed $curDeviceID Current DeviceID
+ * @return array
+ */
+function PrepareDeviceField($curDeviceID)
+{
+   $appGpsTrack  = new app_gpstrack();
+   $devices      = $appGpsTrack->SelectGpsDevices();
+   $devicesCount = count($devices);
+   
+   $selectBoxDevices = array();
+
+   for($i = 0; $i < $devicesCount; $i++)
+   {
+      $deviceID   = $devices[$i]['DEVICE_ID'];
+      $deviceName = $devices[$i]['DEVICE_NAME'];
+      $userName   = $devices[$i]['USER_NAME'];
+
+      $selectBoxDevices[$i]['DEVICE_ID']   = $deviceID;
+      $selectBoxDevices[$i]['DEVICE_NAME'] = isset($userName) ? $deviceName . " (" . $userName . ")" : $deviceName;
+      
+      if ($curDeviceID === $deviceID)
+         $selectBoxDevices[$i]['SELECTED'] = 1;
+   }
+
+   return $selectBoxDevices;
+}
+
+/**
+ * Fill ListBox for GPS Actions
+ * @param mixed $curActionTypeID Current GPS action
+ * @return array
+ */
+function PrepareActionTypeField($curActionTypeID)
+{
+   $appGpsTrack      = new app_gpstrack();
+   $actionTypes      = $appGpsTrack->SelectActionType();
+   $actionTypesCount = count($actionTypes);
+
+   $selectBoxActionType = array();
+   
+   for($i = 0; $i < $actionTypesCount; $i++)
+   {
+      $actionTypeID   = $actionTypes[$i]['TYPE_ID'];
+      $actionTypeName = $actionTypes[$i]['TYPE_NAME'];
+
+      $selectBoxActionType[$i]['TYPE_ID']   = $actionTypeID;
+      $selectBoxActionType[$i]['TYPE_NAME'] = $actionTypeName;
+      
+      if ($curActionTypeID === $actionTypeID)
+         $selectBoxActionType[$i]['SELECTED'] = 1;
+   }
+
+   return $selectBoxActionType;
+}
+
+function PrepareScriptField($curScriptID)
+{
+   $script = SQLSelect("SELECT ID, TITLE FROM scripts ORDER BY TITLE");
+
+   $scriptCount     = count($script);
+   $selectBoxScript = array();
+
+   for($i = 0; $i < $scriptCount; $i++)
+   {
+      $scriptID   = $script[$i]['ID'];
+      $scriptName = $script[$i]['TITLE'];
+
+      $selectBoxScript[$i]['SCRIPT_ID']   = $scriptID;
+      $selectBoxScript[$i]['SCRIPT_NAME'] = $scriptName;
+
+      if ($curScriptID === $scriptID)
+         $selectBoxScript[$i]['SELECTED'] = 1;
+   }
+
+   return $selectBoxScript;
+}
+ 
+
+
 if ($this->owner->name == 'panel')
 {
    $out['CONTROLPANEL'] = 1;
 }
 
-if (isset($id) && !empty($id)) 
+if (isset($id)) 
 {
    $rec = $this->GetActionByID($id);
 }
@@ -40,6 +149,7 @@ if ($this->mode == 'update')
    global $action_type;
    $rec['TYPE_ID'] = $action_type;
    
+   
    //updating 'SCRIPT_ID' (select)
    if (isset($this->script_id))
    {
@@ -60,118 +170,57 @@ if ($this->mode == 'update')
    {
       if (isset($rec['ACTION_ID']))
       {
-         $this->UpdateAction($rec);
+         try
+         {
+            $this->UpdateAction($rec);
+            $out['OK'] = 1;
+         }
+         catch(Exception $ex)
+         {
+            $message = $this->GetExceptionMessage($ex);
+            DebMes($message,'fatal');
+            $out['ERR'] = true;
+         }
       }
       else
       {
-         DebMes("1. SET");
          $new_rec = 1;
-         
-         $rec['ACTION_ID'] = $this->SetAction($rec);
+         try
+         {
+            $rec['ACTION_ID'] = $this->SetAction($rec);
+            $out['OK'] = 1;
+         }
+         catch(Exception $ex)
+         {
+            $message = $this->GetExceptionMessage($ex);
+            DebMes($message,'fatal');
+            $out['ERR'] = true;
+         }
       }
-      $out['OK'] = 1;
    }
    else
    {
-      $out['ERR']=1;
+      $out['ERR'] = 1;
    }
 }
 
+$out['POI_SELECT_BOX']         = PreparePoiField($rec['POI_ID']);
+$out['DEVICE_SELECT_BOX']      = PrepareDeviceField($rec['DEVICE_ID']);
+$out['ACTION_TYPE_SELECT_BOX'] = PrepareActionTypeField($rec['TYPE_ID']);
+$out['SCRIPT_SELECT_BOX']      = PrepareScriptField($rec['SCRIPT_ID']);
+$out['EXECUTED']               = $rec['EXECUTED'];
 
-//options for 'LOCATION_ID' (select)
-$tmp = $this->SelectLocations('1', "POI_NAME");
-//$tmp=SQLSelect("SELECT ID, TITLE FROM gpslocations ORDER BY TITLE");
-$gpslocations_total = count($tmp);
-for($gpslocations_i = 0; $gpslocations_i < $gpslocations_total; $gpslocations_i++)
+if (is_array($rec))
 {
-   $location_id_opt[$tmp[$gpslocations_i]['POI_ID']] = $tmp[$gpslocations_i]['POI_NAME'];
-}
-
-for($i = 0; $i < count($tmp); $i++)
-{
-   if ($rec['LOCATION_ID'] == $tmp[$i]['POI_ID'])
-      $tmp[$i]['SELECTED'] = 1;
-}
-
-$out['LOCATION_ID_OPTIONS'] = $tmp;
-
-// Device List
-//options for 'USER_ID' (select)
-$devices      = $this->SelectGpsDevices();
-$devicesCount = count($devices);
-
-for($i = 0; $i < $devicesCount; $i++)
-{
-   $selectBoxDevices[$devices[$i]['DEVICE_ID']] = $devices[$i]['DEVICE_NAME'];
-  
-   if ($rec['DEVICE_ID'] == $devices[$i]['DEVICE_ID'])
-      $devices[$i]['SELECTED'] = 1;
-}
-//USER_ID_OPTIONS
-$out['DEVICE_SELECT_BOX'] = $devices;
-
-
-//options for 'ACTION_TYPE' (select)
-$out['ACTION_TYPE_OPTIONS'] = $this->SelectActionType();
-
-$actTypeCnt = count($out['ACTION_TYPE_OPTIONS']);
-
-for($i = 0; $i < $actTypeCnt; $i++)
-{
-   $action_type_opt[$out['ACTION_TYPE_OPTIONS'][$i]['TYPE_ID']] = $out['ACTION_TYPE_OPTIONS'][$i]['TYPE_NAME'];
-
-   if ($out['ACTION_TYPE_OPTIONS'][$i]['TYPE_NAME'] == $rec['ACTION_TYPE'])
+   foreach($rec as $k => $v)
    {
-      $out['ACTION_TYPE_OPTIONS'][$i]['SELECTED'] = 1;
-      
-      $out['ACTION_TYPE'] = $out['ACTION_TYPE_OPTIONS'][$i]['TYPE_NAME'];
-      $rec['ACTION_TYPE'] = $out['ACTION_TYPE_OPTIONS'][$i]['TYPE_NAME'];
-   }
-}
-
-
-
-//options for 'SCRIPT_ID' (select)
-$tmp = SQLSelect("SELECT ID, TITLE FROM scripts ORDER BY TITLE");
-$scripts_total=count($tmp);
-for($scripts_i=0;$scripts_i<$scripts_total;$scripts_i++) {
-   $script_id_opt[$tmp[$scripts_i]['ID']]=$tmp[$scripts_i]['TITLE'];
-}
-for($i=0;$i<count($tmp);$i++) {
-   if ($rec['SCRIPT_ID']==$tmp[$i]['ID']) $tmp[$i]['SELECTED']=1;
-}
-$out['SCRIPT_ID_OPTIONS']=$tmp;
-if ($rec['EXECUTED']!='') {
-   $tmp=explode(' ', $rec['EXECUTED']);
-   $out['EXECUTED_DATE']=fromDBDate($tmp[0]);
-   $tmp2=explode(':', $tmp[1]);
-   $executed_hours=$tmp2[0];
-   $executed_minutes=$tmp2[1];
-}
-for($i=0;$i<60;$i++) {
-   $title=$i;
-   if ($i<10) $title="0$i";
-   if ($title==$executed_minutes) {
-      $out['EXECUTED_MINUTES'][]=array('TITLE'=>$title, 'SELECTED'=>1);
-   } else {
-      $out['EXECUTED_MINUTES'][]=array('TITLE'=>$title);
-   }
-}
-for($i=0;$i<24;$i++) {
-   $title=$i;
-   if ($i<10) $title="0$i";
-   if ($title==$executed_hours) {
-      $out['EXECUTED_HOURS'][]=array('TITLE'=>$title, 'SELECTED'=>1);
-   } else {
-      $out['EXECUTED_HOURS'][]=array('TITLE'=>$title);
-   }
-}
-if (is_array($rec)) {
-   foreach($rec as $k=>$v) {
-      if (!is_array($v)) {
-         $rec[$k]=htmlspecialchars($v);
+      if (!is_array($v))
+      {
+         $rec[$k] = htmlspecialchars($v);
       }
    }
 }
+
 outHash($rec, $out);
+
 ?>

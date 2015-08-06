@@ -86,7 +86,6 @@ $out['SORTBY']=$sortby_gpsactions;
 $gpsActions     = $this->SelectGpsActions();
 $gpsActionCount = count($gpsActions);
 
-DebMes("CNT: " . $gpsActionCount);
 if ($gpsActionCount > 0)
 {
    colorizeArray($gpsActions);

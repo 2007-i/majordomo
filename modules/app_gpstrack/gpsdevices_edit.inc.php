@@ -5,7 +5,10 @@ if ($this->owner->name=='panel')
    $out['CONTROLPANEL'] = 1;
 }
 
-$rec = $this->GetDeviceByID($id);
+if (!$this->IsNullValue($id))
+{
+   $rec = $this->GetDeviceByID($id);
+}
 
 if ($this->mode == 'update')
 {
@@ -42,18 +45,29 @@ if ($this->mode == 'update')
    
    if ($ok)
    {
-      if (isset($rec['DEVICE_ID']) && is_numeric($rec['DEVICE_ID']))
+      try
       {
-         $isUpdated = $this->UpdateGpsDevice($rec['DEVICE_ID'], $rec['DEVICE_NAME'], $rec['DEVICE_CODE'], $rec['USER_ID']);
+         DebMes("Dev: " . $rec['DEVICE_ID']);
+         if (!$this->IsNullValue($rec['DEVICE_ID']))
+         {
+            DebMes("U");
+            $this->UpdateGpsDevice($rec['DEVICE_ID'], $rec['DEVICE_NAME'], $rec['DEVICE_CODE'], $rec['USER_ID']);
+         }
+         else
+         {
+            DebMes("I");
+            $new_rec = 1;
+            $rec['DEVICE_ID'] = $this->SetGpsDevice($rec);
+         }
+         
+         $out['OK'] = 1;
       }
-      else
+      catch(Exception $ex)
       {
-         $new_rec = 1;
-
-         $rec['DEVICE_ID'] = $this->SetGpsDevice($rec);
+         $message = $this->GetExceptionMessage($ex);
+         DebMes($message,'fatal');
+         $out['ERR'] = true;
       }
-
-      $out['OK'] = 1;
    }
    else
    {

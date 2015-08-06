@@ -558,7 +558,32 @@ EOD;
     */
    public function SetAction($object)
    {
-      $actitonID = SQLInsert('GPS_ACTION', $object);
+      if ($this->IsNullValue($object['ACTION_ID']))
+         throw new Exception('ACTION_ID is null');
+      
+      $action['ACTION_ID'] = $object['ACTION_ID'];
+      
+      if ($this->IsNullValue($object['POI_ID']))
+         throw new Exception('POI_ID is null');
+
+      $action['POI_ID']    = $object['POI_ID'];
+
+      if ($this->IsNullValue($object['DEVICE_ID']))
+         throw new Exception('DEVICE_ID is null');
+
+      $action['DEVICE_ID'] = $object['DEVICE_ID'];
+
+      if ($this->IsNullValue($object['TYPE_ID']))
+         throw new Exception('TYPE_ID is null');
+
+      $action['TYPE_ID']   = $object['TYPE_ID'];
+      $action['SCRIPT_ID'] = $object['SCRIPT_ID'];
+      $action['CODE']      = $object['CODE'];
+      $action['LOG']       = $object['LOG'];
+      $action['EXECUTED']  = $object['EXECUTED'];
+
+      $actitonID = SQLInsert('GPS_ACTION', $action);
+
       return $actitonID;
    }
 
@@ -568,7 +593,31 @@ EOD;
     */
    public function UpdateAction($object)
    {
-      SQLUpdate('GPS_ACTION', $object, 'ACTION_ID');
+      if ($this->IsNullValue($object['ACTION_ID']))
+         throw new Exception('ACTION_ID is null');
+      
+      $action['ACTION_ID'] = $object['ACTION_ID'];
+      
+      if ($this->IsNullValue($object['POI_ID']))
+         throw new Exception('POI_ID is null');
+
+      $action['POI_ID'] = $object['POI_ID'];
+
+      if ($this->IsNullValue($object['DEVICE_ID']))
+         throw new Exception('DEVICE_ID is null');
+
+      $action['DEVICE_ID'] = $object['DEVICE_ID'];
+
+      if ($this->IsNullValue($object['TYPE_ID']))
+         throw new Exception('TYPE_ID is null');
+
+      $action['TYPE_ID']   = $object['TYPE_ID'];
+      $action['SCRIPT_ID'] = $object['SCRIPT_ID'];
+      $action['CODE']      = $object['CODE'];
+      $action['LOG']       = $object['LOG'];
+      $action['EXECUTED']  = $object['EXECUTED'];
+
+      SQLUpdate('GPS_ACTION', $action, 'ACTION_ID');
    }
 
    /**
@@ -578,10 +627,17 @@ EOD;
     */
    public function GetActionByID($actionID)
    {
-      $sqlQuery = "select POI_ID, POI_NAME, POI_LAT, POI_LNG, LM_DATE, POI_RANGE
-                     from GPS_LOCATION
-                    where POI_ID = " . $actionID;
-      
+      $sqlQuery = "select a.ACTION_ID, a.POI_ID, l.POI_NAME, d.DEVICE_ID, d.DEVICE_NAME, a.TYPE_ID, t.TYPE_NAME, a.SCRIPT_ID, a.CODE, a.LOG, a.EXECUTED,
+                          d.USER_ID, (select USERNAME
+                                        from users u
+                                       where u.ID = d.USER_ID
+                                     ) USER_NAME
+                     from GPS_ACTION a, GPS_LOCATION l, DEVICE d, GPS_ACTION_TYPE t
+                    where a.POI_ID    = l.POI_ID
+                      and a.DEVICE_ID = d.DEVICE_ID
+                      and a.TYPE_ID   = t.TYPE_ID
+                      and a.ACTION_ID = " . $actionID;
+
       $action = SQLSelectOne($sqlQuery);
 
       return $action;
@@ -607,13 +663,29 @@ EOD;
       return $device;
    }
 
+   private function GetDeviceMaxID()
+   {
+      $sqlQuery = "select max(DEVICE_ID) DEVICE_ID
+                     from DEVICE";
+
+      $device = SQLSelectOne($sqlQuery);
+
+      return $device['DEVICE_ID'];
+   }
 
    public function SetGpsDevice($rec)
    {
-      $deviceTypeID   = $this->GetDeviceType();
-      $rec['TYPE_ID'] = $deviceTypeID;
+      DebMes($rec);
       
-      $deviceID = SQLInsert('DEVICE', $rec);
+      $deviceTypeID     = $this->GetDeviceType();
+      $device['TYPE_ID'] = $deviceTypeID;
+      $device['FLAG_DEL']  = 'N';
+      $device['FLAG_GPS']  = 'Y';
+      $device['DEVICE_ID'] = $this->GetDeviceMaxID()+1;
+      DebMes($device);
+      
+
+      $deviceID = SQLInsert('DEVICE', $device);
 
       return $deviceID;
    }
@@ -660,7 +732,7 @@ EOD;
     */
    public function SelectGpsActions()
    {
-      $sqlQuery = "select a.ACTION_ID, a.POI_ID, l.POI_NAME, d.DEVICE_ID, d.DEVICE_NAME, a.TYPE_ID, t.TYPE_NAME, SCRIPT_ID, CODE, LOG, EXECUTED,
+      $sqlQuery = "select a.ACTION_ID, a.POI_ID, l.POI_NAME, d.DEVICE_ID, d.DEVICE_NAME, a.TYPE_ID, t.TYPE_NAME, a.SCRIPT_ID, a.CODE, a.LOG, a.EXECUTED,
                           d.USER_ID, (select USERNAME
                                         from users u
                                        where u.ID = d.USER_ID
@@ -674,5 +746,20 @@ EOD;
       $actions = SQLSelect($sqlQuery);
 
       return $actions;
+   }
+
+   private function IsNullValue($value)
+   {
+      return (isset($value) && $value == '');
+   }
+
+   /**
+    Return error message
+    * @param mixed $ex Exception
+    * @return string
+    */
+   public function GetExceptionMessage($ex)
+   {
+      return 'Exception code: ' . $ex->getCode() . ' File: ' . $ex->getFile() . ' Line: ' . $ex->getLine() . ' Message: ' . $ex->getMessage();
    }
 }

@@ -34,30 +34,11 @@
          <tr>
             <td><b>[#DEVICE_NAME#]</b></td>
             [#if "<#IS_SET_USER_ID#>"!="1"#]
-            <td>
-               [#if USER_ID!=""#]
-                  [#USER_ID#]
-               [#else#]
-                  &nbsp;
-               [#endif#]
-            </td>
+            <td>[#if USER_ID!=""#][#USER_NAME#][#else#]&nbsp;[#endif#]</td>
             [#endif IS_SET_USER_ID#]
+            <td>[#if LM_DATE!=""#][#LM_DATE#][#else#]&nbsp;[#endif#]</td>
+            <td>[#if DEVICE_CODE!=""#][#DEVICE_CODE#][#else#]&nbsp;[#endif#]</td>
             <td>
-            [#if LM_DATE!=""#]
-               [#LM_DATE#]
-            [#else#]
-               &nbsp;
-            [#endif#]
-            </td>
-            <td>
-               [#if DEVICE_CODE!=""#]
-                  [#DEVICE_CODE#]
-               [#else#]
-                  &nbsp;
-               [#endif#]
-            </td>
-            <td>
- 
             [#if "<#ACTION#>"=="admin"#]
                <a class="btn btn-default btn-sm" href="?data_source=<#DATA_SOURCE#>&view_mode=edit_gpsdevices&id=[#DEVICE_ID#]"><i class="glyphicon glyphicon-pencil"></i></a>
                <a class="btn btn-default btn-sm" href="?data_source=<#DATA_SOURCE#>&view_mode=delete_gpsdevices&id=[#DEVICE_ID#]" onclick="return confirm('<#LANG_ARE_YOU_SURE#>')"><i class="glyphicon glyphicon-remove"></i></a>
