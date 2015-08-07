@@ -85,9 +85,18 @@ function PrepareActionTypeField($curActionTypeID)
    return $selectBoxActionType;
 }
 
+/**
+ * Fill ListBox for Action scripts
+ * @param mixed $curScriptID 
+ * @return array
+ */
 function PrepareScriptField($curScriptID)
 {
-   $script = SQLSelect("SELECT ID, TITLE FROM scripts ORDER BY TITLE");
+   $sqlQuery = "SELECT ID, TITLE
+                  FROM scripts
+                 ORDER BY TITLE";
+
+   $script = SQLSelect($sqlQuery);
 
    $scriptCount     = count($script);
    $selectBoxScript = array();
@@ -114,7 +123,7 @@ if ($this->owner->name == 'panel')
    $out['CONTROLPANEL'] = 1;
 }
 
-if (isset($id)) 
+if (!$this->IsNullOrEmptyString($id))
 {
    $rec = $this->GetActionByID($id);
 }
@@ -168,34 +177,29 @@ if ($this->mode == 'update')
    //UPDATING RECORD
    if ($ok)
    {
-      if (isset($rec['ACTION_ID']))
+      try
       {
-         try
+         if (!$this->IsNullOrEmptyString($rec['ACTION_ID']))
          {
             $this->UpdateAction($rec);
-            $out['OK'] = 1;
          }
-         catch(Exception $ex)
+         else
          {
-            $message = $this->GetExceptionMessage($ex);
-            DebMes($message,'fatal');
-            $out['ERR'] = true;
+            $new_rec = 1;
+            $gpsActID = $this->SetAction($rec);
+            $rec['ACTION_ID'] = $gpsActID;
+            $id = $gpsActID;
          }
+         
+         $out['OK'] = 1;
       }
-      else
+      catch(Exception $ex)
       {
-         $new_rec = 1;
-         try
-         {
-            $rec['ACTION_ID'] = $this->SetAction($rec);
-            $out['OK'] = 1;
-         }
-         catch(Exception $ex)
-         {
-            $message = $this->GetExceptionMessage($ex);
-            DebMes($message,'fatal');
-            $out['ERR'] = true;
-         }
+         $message = $this->GetExceptionMessage($ex);
+         DebMes($message,'fatal');
+
+         $out['ERR']         = true;
+         $out['ERR_MESSAGE'] = $ex->getMessage();
       }
    }
    else

@@ -6,9 +6,10 @@
  *
  * @package MajorDoMo
  * @author Serge Dzheigalo <jey@tut.by> http://smartliving.ru/
- * @version 0.2 (wizard, 14:07:59 [Jul 25, 2011])
+ * @author Denis Lutsenko <palacex@gmail.com>
+ * @version 0.3 (wizard, 14:35:59 [Aug 07, 2015])
  */
-Define('DEF_ACTION_TYPE_OPTIONS', '1=Entering|0=Leaving'); // options for 'ACTION_TYPE'
+
 
 class app_gpstrack extends module
 {
@@ -279,59 +280,84 @@ class app_gpstrack extends module
     * @param mixed $id Log ID
     * @return void
     */
-   function delete_gpslog($id)
+   public function delete_gpslog($id)
    {
-      $sqlQuery = "SELECT *
-                     FROM gpslog
-                    WHERE ID = '$id'";
+      $gpsLog   = $this->SelectGpsHistoryByID($id);
+      $gpsLogID = $gpsLog['REC_ID']; 
 
-      $rec = SQLSelectOne($sqlQuery);
+      if (!$this->IsNullOrEmptyString($gpsLogID))
+      {
+         $sqlQuery = "delete
+                        from GPS_HISTORY
+                       where REC_ID = " . $gpsLogID;
 
-      // some action for related tables
-      SQLExec("DELETE FROM gpslog WHERE ID='" . $rec['ID'] . "'");
+         SQLExec($sqlQuery);
+      }
    }
 
    /**
     * gpslocations search
-    *
-    * @access public
+    * @param mixed $out array
     */
-   function search_gpslocations(&$out) {
-      require(DIR_MODULES.$this->name.'/gpslocations_search.inc.php');
+   function search_gpslocations(&$out)
+   {
+      require(DIR_MODULES . $this->name . '/gpslocations_search.inc.php');
    }
+   
    /**
     * gpslocations edit/add
-    *
-    * @access public
+    * @param mixed $out Array
+    * @param mixed $id Location ID
     */
-   function edit_gpslocations(&$out, $id) {
-      require(DIR_MODULES.$this->name.'/gpslocations_edit.inc.php');
+   public function edit_gpslocations(&$out, $id)
+   {
+      require(DIR_MODULES . $this->name . '/gpslocations_edit.inc.php');
    }
+   
    /**
     * gpslocations delete record
-    *
-    * @access public
+    * @param mixed $id Location ID
     */
-   function delete_gpslocations($id) {
-      $rec=SQLSelectOne("SELECT * FROM gpslocations WHERE ID='$id'");
-      // some action for related tables
-      SQLExec("DELETE FROM gpslocations WHERE ID='".$rec['ID']."'");
+   public function delete_gpslocations($id)
+   {
+      if (!$this->IsNullOrEmptyString($id))
+      {
+         $poi = $this->GetLocationByID($id);
+         $poiID = $poi['POI_ID'];
+
+         if (!$this->IsNullOrEmptyString($poiID))
+         {
+            $sqlQuery = "delete
+                           from GPS_ACTION
+                          where POI_ID = " . $poiID;
+            SQLExec($sqlQuery);
+
+            $sqlQuery = "delete
+                           from GPS_LOCATION
+                          where POI_ID = " . $poiID;
+
+            SQLExec($sqlQuery);
+         }
+      }
    }
+   
    /**
     * gpsdevices search
-    *
-    * @access public
+    * @param mixed $out array
     */
-   function search_gpsdevices(&$out) {
-      require(DIR_MODULES.$this->name.'/gpsdevices_search.inc.php');
+   public function search_gpsdevices(&$out)
+   {
+      require(DIR_MODULES . $this->name . '/gpsdevices_search.inc.php');
    }
+
    /**
     * gpsdevices edit/add
-    *
-    * @access public
+    * @param mixed $out array
+    * @param mixed $id Device ID
     */
-   function edit_gpsdevices(&$out, $id) {
-      require(DIR_MODULES.$this->name.'/gpsdevices_edit.inc.php');
+   function edit_gpsdevices(&$out, $id)
+   {
+      require(DIR_MODULES . $this->name . '/gpsdevices_edit.inc.php');
    }
    
    /**
@@ -345,7 +371,7 @@ class app_gpstrack extends module
                     where DEVICE_ID = " . $id;
       $rec = SQLSelectOne($sqlQuery);
 
-      if (isset($rec['DEVICE_ID']))
+      if (!$this->IsNullOrEmptyString($rec['DEVICE_ID']))
       {
          $sqlQuery = "update DEVICE
                          set FLAG_DEL = 'Y',
@@ -356,30 +382,41 @@ class app_gpstrack extends module
    }
 
    /**
-    * gpsactions search
-    *
-    * @access public
+    * search_gpsactions
+    * @param mixed $out array
     */
-   function search_gpsactions(&$out) {
-      require(DIR_MODULES.$this->name.'/gpsactions_search.inc.php');
+   public function search_gpsactions(&$out)
+   {
+      require(DIR_MODULES.$this->name . '/gpsactions_search.inc.php');
    }
+   
    /**
-    * gpsactions edit/add
-    *
-    * @access public
+    * Add/Edit form
+    * @param mixed $out array
+    * @param mixed $id Action ID
     */
-   function edit_gpsactions(&$out, $id) {
-      require(DIR_MODULES.$this->name.'/gpsactions_edit.inc.php');
+   public function edit_gpsactions(&$out, $id)
+   {
+      require(DIR_MODULES . $this->name . '/gpsactions_edit.inc.php');
    }
+
    /**
-    * gpsactions delete record
-    *
-    * @access public
+    * Delete gps action
+    * @param mixed $id Action ID
     */
-   function delete_gpsactions($id) {
-      $rec=SQLSelectOne("SELECT * FROM gpsactions WHERE ID='$id'");
-      // some action for related tables
-      SQLExec("DELETE FROM gpsactions WHERE ID='".$rec['ID']."'");
+   public function delete_gpsactions($id)
+   {
+      $action = $this->GetActionByID($id);
+      $actionID = $action['ACTION_ID'];
+
+      if (!$this->IsNullOrEmptyString($actionID))
+      {
+         $sqlQuery = "delete
+                        from GPS_ACTION
+                       where ACTION_ID = " . $actionID;
+
+         SQLExec($sqlQuery);
+      }
    }
    /**
     * Install
@@ -558,33 +595,32 @@ EOD;
     */
    public function SetAction($object)
    {
-      if ($this->IsNullValue($object['ACTION_ID']))
-         throw new Exception('ACTION_ID is null');
-      
-      $action['ACTION_ID'] = $object['ACTION_ID'];
-      
-      if ($this->IsNullValue($object['POI_ID']))
-         throw new Exception('POI_ID is null');
+      $actionID     = $this->GetGpsActionMaxID() + 1;
+      $poiID        = $object['POI_ID'];
+      $deviceID     = $object['DEVICE_ID'];
+      $actionTypeID = $object['TYPE_ID'];
 
-      $action['POI_ID']    = $object['POI_ID'];
+      if ($this->IsNullOrEmptyString($poiID))
+         throw new Exception('Location (POI_ID) is null');
 
-      if ($this->IsNullValue($object['DEVICE_ID']))
-         throw new Exception('DEVICE_ID is null');
+      if ($this->IsNullOrEmptyString($deviceID))
+         throw new Exception('Device ID (DEVICE_ID) is null');
 
-      $action['DEVICE_ID'] = $object['DEVICE_ID'];
+      if ($this->IsNullOrEmptyString($actionTypeID))
+         throw new Exception('Action type (TYPE_ID) is null');
 
-      if ($this->IsNullValue($object['TYPE_ID']))
-         throw new Exception('TYPE_ID is null');
-
-      $action['TYPE_ID']   = $object['TYPE_ID'];
+      $action['ACTION_ID'] = $actionID;
+      $action['POI_ID']    = $poiID;
+      $action['DEVICE_ID'] = $deviceID;
+      $action['TYPE_ID']   = $actionTypeID;
       $action['SCRIPT_ID'] = $object['SCRIPT_ID'];
       $action['CODE']      = $object['CODE'];
       $action['LOG']       = $object['LOG'];
       $action['EXECUTED']  = $object['EXECUTED'];
 
-      $actitonID = SQLInsert('GPS_ACTION', $action);
-
-      return $actitonID;
+      SQLInsert('GPS_ACTION', $action);
+      
+      return $actionID;
    }
 
    /**
@@ -593,22 +629,22 @@ EOD;
     */
    public function UpdateAction($object)
    {
-      if ($this->IsNullValue($object['ACTION_ID']))
+      if ($this->IsNullOrEmptyString($object['ACTION_ID']))
          throw new Exception('ACTION_ID is null');
       
       $action['ACTION_ID'] = $object['ACTION_ID'];
       
-      if ($this->IsNullValue($object['POI_ID']))
+      if ($this->IsNullOrEmptyString($object['POI_ID']))
          throw new Exception('POI_ID is null');
 
       $action['POI_ID'] = $object['POI_ID'];
 
-      if ($this->IsNullValue($object['DEVICE_ID']))
+      if ($this->IsNullOrEmptyString($object['DEVICE_ID']))
          throw new Exception('DEVICE_ID is null');
 
       $action['DEVICE_ID'] = $object['DEVICE_ID'];
 
-      if ($this->IsNullValue($object['TYPE_ID']))
+      if ($this->IsNullOrEmptyString($object['TYPE_ID']))
          throw new Exception('TYPE_ID is null');
 
       $action['TYPE_ID']   = $object['TYPE_ID'];
@@ -650,7 +686,7 @@ EOD;
     */
    public function GetDeviceByID($deviceID)
    {
-      if (!isset($deviceID) && empty($deviceID))
+      if ($this->IsNullOrEmptyString($deviceID))
          return false;
 
       $sqlQuery = "select d.DEVICE_ID, d.TYPE_ID, d.DEVICE_NAME, d.DEVICE_CODE, d.USER_ID, g.LATITUDE, g.LONGITUDE, g.LM_DATE
@@ -673,17 +709,55 @@ EOD;
       return $device['DEVICE_ID'];
    }
 
+   /**
+    * Get max action id
+    * @return mixed
+    */
+   private function GetGpsActionMaxID()
+   {
+      $sqlQuery = "select max(ACTION_ID) ACTION_ID
+                     from GPS_ACTION";
+
+      $action = SQLSelectOne($sqlQuery);
+
+      return $action['ACTION_ID'];
+   }
+   
    public function SetGpsDevice($rec)
    {
-      DebMes($rec);
+      $deviceID     = $this->GetDeviceMaxID() + 1;
+      $deviceTypeID = $this->GetDeviceType();
+      $deviceName   = $rec['DEVICE_NAME'];
+      $deviceCode   = $rec['DEVICE_CODE'];
+      $userID       = $rec['USER_ID'];
+      $recDate      = date("Y-m-d H:i:s");
       
-      $deviceTypeID     = $this->GetDeviceType();
-      $device['TYPE_ID'] = $deviceTypeID;
-      $device['FLAG_DEL']  = 'N';
-      $device['FLAG_GPS']  = 'Y';
-      $device['DEVICE_ID'] = $this->GetDeviceMaxID()+1;
-      DebMes($device);
+      if ($this->IsNullOrEmptyString($deviceTypeID))
+         throw new Exception('Device Type (TYPE_ID) is null');
       
+      if ($this->IsNullOrEmptyString($deviceName))
+         throw new Exception('Device Name (DEVICE_NAME) is null');
+
+      if ($this->IsNullOrEmptyString($deviceCode))
+         throw new Exception('Device CODE (DEVICE_CODE) is null');
+
+      if ($this->IsNullOrEmptyString($userID))
+         throw new Exception('User ID (USER_ID) is null');
+
+      if (!$this->IsDeviceByCode($deviceCode))
+      {
+         DebMes('no device');
+         throw new Exception('Device (' . $deviceCode . ') already exist');
+      }
+
+      $device['TYPE_ID']     = $deviceTypeID;
+      $device['DEVICE_NAME'] = $deviceName;
+      $device['DEVICE_CODE'] = $deviceCode;
+      $device['USER_ID']     = $userID;
+      $device['LM_DATE']     = $recDate;
+      $device['FLAG_DEL']    = 'N';
+      $device['FLAG_GPS']    = 'Y';
+      $device['DEVICE_ID']   = $deviceID;
 
       $deviceID = SQLInsert('DEVICE', $device);
 
@@ -700,6 +774,21 @@ EOD;
    public function UpdateGpsDevice($deviceID, $deviceName, $deviceCode, $userID)
    {
       $deviceTypeID = $this->GetDeviceType();
+
+      if ($this->IsNullOrEmptyString($deviceID))
+         throw new Exception('Device ID (DEVICE_ID) is null');
+
+      if ($this->IsNullOrEmptyString($deviceTypeID))
+         throw new Exception('Device Type (TYPE_ID) is null');
+      
+      if ($this->IsNullOrEmptyString($deviceName))
+         throw new Exception('Device Name (DEVICE_NAME) is null');
+
+      if ($this->IsNullOrEmptyString($deviceCode))
+         throw new Exception('Device CODE (DEVICE_CODE) is null');
+
+      if ($this->IsNullOrEmptyString($userID))
+         throw new Exception('User ID (USER_ID) is null');
 
       $obj["TYPE_ID"]     = $deviceTypeID;
       $obj["DEVICE_NAME"] = $deviceName;
@@ -748,9 +837,59 @@ EOD;
       return $actions;
    }
 
-   private function IsNullValue($value)
+   /**
+    * Check for device code exists
+    * @param mixed $deviceCode Device Code
+    * @return bool
+    */
+   private function IsDeviceByCode($deviceCode)
    {
-      return (isset($value) && $value == '');
+      $sqlQuery = "select DEVICE_ID
+                     from DEVICE
+                    where DEVICE_CODE = '" . $deviceCode . "'";
+      
+      $device = SQLSelectOne($sqlQuery);
+      
+      if ($this->IsNullOrEmptyString($device['DEVICE_ID']))
+         return true;
+      
+      return false;
+   }
+
+   /**
+    * Summary of SelectGpsHistory
+    * @param mixed $recID GPS History ID
+    * @return array
+    */
+   public function SelectGpsHistoryByID($recID)
+   {
+      if ($this->IsNullOrEmptyString($recID))
+         return array();
+
+      $sqlQuery = "select h.REC_ID, h.REC_DATE, h.DEVICE_ID, d.DEVICE_NAME, h.LATITUDE, h.LONGITUDE, h.LM_DATE, h.ALTITUDE, h.PROVIDER, 
+                          h.SPEED, h.BATTERY_LEVEL, h.BATTERY_STATUS, h.ACCURACY
+                     from GPS_HISTORY h
+                     left join GPS_DEVICE d on (d.DEVICE_ID = h.DEVICE_ID)
+                    where h.REC_ID = " . $recID;
+
+      $history = SQLSelectOne($sqlQuery);
+
+      return $history;
+   }
+
+   /**
+    * Delete all GPS history
+    */
+   public function DeleteGpsHistory()
+   {
+      $sqlQuery = "delete from GPS_HISTORY";
+      SQLExec($sqlQuery);
+   }
+
+
+   public function IsNullOrEmptyString($value)
+   {
+      return (!isset($value) || trim($value) === '');
    }
 
    /**
@@ -762,4 +901,5 @@ EOD;
    {
       return 'Exception code: ' . $ex->getCode() . ' File: ' . $ex->getFile() . ' Line: ' . $ex->getLine() . ' Message: ' . $ex->getMessage();
    }
+
 }

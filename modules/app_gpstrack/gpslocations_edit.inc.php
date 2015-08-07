@@ -5,9 +5,8 @@ if ($this->owner->name == 'panel')
    $out['CONTROLPANEL'] = 1;
 }
 
-if (isset($id)) 
+if (!$this->IsNullOrEmptyString($id)) 
 {
-   DebMes("ddd: " . $id);
    $rec = $this->GetLocationByID($id);
 }
 
@@ -18,10 +17,9 @@ if ($this->mode == 'update')
    global $title;
    $rec['POI_NAME'] = $title;
 
-   if ($rec['POI_NAME'] == '')
+   if ($this->IsNullOrEmptyString($rec['POI_NAME']))
    {
       $out['ERR_TITLE'] = 1;
-      
       $ok = 0;
    }
 
@@ -33,9 +31,9 @@ if ($this->mode == 'update')
    global $lon;
    $rec['POI_LNG']=(float)$lon;
 
-//updating 'RANGE' (float, required)
+   //updating 'RANGE' (float, required)
    global $range;
-   $rec['POI_RANGE']=(float)$range;
+   $rec['POI_RANGE'] = (float)$range;
 
    $rec['LM_DATE'] = date("Y-m-d H:i:s");
 
@@ -46,7 +44,7 @@ if ($this->mode == 'update')
    //UPDATING RECORD
    if ($ok)
    {
-      if (isset($rec['POI_ID']))
+      if (!$this->IsNullOrEmptyString($rec['POI_ID']))
       {
          $this->UpdateLocation($rec);
       }

@@ -14,7 +14,7 @@
 </ul>
 <form action="?" method="post" enctype="multipart/form-data" name="frmEdit" class="form-horizontal">
    [#if OK#] <div class="alert alert-success"><#LANG_DATA_SAVED#></div> [#endif OK#]
-   [#if ERR#] <div class="alert alert-danger"><#LANG_FILLOUT_REQURED#></div> [#endif ERR#]
+   [#if ERR#] <div class="alert alert-danger"><#LANG_FILLOUT_REQURED#><br />[#ERR_MESSAGE#]</div> [#endif ERR#]
 
    <!-- LOCATION_ID (select) -->
    [#if !IS_SET_LOCATION_ID#]
@@ -36,6 +36,7 @@
       <label class="col-lg-4 control-label" for="inputTitle"><#LANG_DEVICES#>:<font color="red">*</font></label>
       <div class="col-lg-5">
          <select name="device_id" class="form-control [#if ERR_DEVICE_ID#]alert-danger[#endif#]">
+            <option value="">select</option>
             [#begin DEVICE_SELECT_BOX#]
                <option value="[#DEVICE_ID#]" [#if SELECTED#] selected[#endif#]>[#DEVICE_NAME#]</option>
             [#end DEVICE_SELECT_BOX#]

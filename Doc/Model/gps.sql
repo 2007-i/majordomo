@@ -105,23 +105,24 @@ create table GPS_ACTION
 (
    ACTION_ID            INT(10) not null /* ID Действия */,
    POI_ID               INT(10) not null /* ID локации */,
-   DEVICE_ID            INT(10) not null /* ID устройства */,
    TYPE_ID              INT(10) not null /* Тип действия */,
+   DEVICE_ID            INT(10) /* ID устройства */,
    SCRIPT_ID            INT(10) /* ID Скрипта */,
    CODE                 TEXT /* Код */,
    LOG                  TEXT /* Лог */,
    EXECUTED             DATETIME /* Дата выполнения */,
    primary key (ACTION_ID),
-   key AK_GPS_ACTION (POI_ID, DEVICE_ID, TYPE_ID)
-);
+   key AK_GPS_ACTION (POI_ID, TYPE_ID, DEVICE_ID)
+)
+type = InnoDB;
 
 alter table GPS_ACTION add constraint FK_GPS_ACTION_TYPE__TYPE_ID foreign key (TYPE_ID)
       references GPS_ACTION_TYPE (TYPE_ID) on delete restrict on update restrict;
 
-alter table GPS_ACTION add constraint FK_GPS_DEVICE__DEVICE_ID foreign key (DEVICE_ID)
-      references GPS_DEVICE (DEVICE_ID) on delete restrict on update restrict;
+alter table GPS_ACTION add constraint FK_GPS_ACTION__DEVICE_ID foreign key (DEVICE_ID)
+      references DEVICE (DEVICE_ID) on delete restrict on update restrict;
 
-alter table GPS_ACTION add constraint FK_GPS_LOCATION__POI_ID foreign key (POI_ID)
+alter table GPS_ACTION add constraint FK_GPS_ACTION__POI_ID foreign key (POI_ID)
       references GPS_LOCATION (POI_ID) on delete restrict on update restrict;
 
 
@@ -135,8 +136,9 @@ drop table if exists GPS_HISTORY;
 /*==============================================================*/
 create table GPS_HISTORY
 (
-   DEVICE_ID            INT(10) not null /* ID устройства */,
+   REC_ID               INT(10) not null /* ID записи */,
    REC_DATE             DATETIME not null /* Дата записи */,
+   DEVICE_ID            INT(10) not null /* ID устройства */,
    LATITUDE             FLOAT(18,15) not null /* Коорд. широта */,
    LONGITUDE            FLOAT(18,15) not null /* Коорд. Долгота */,
    LM_DATE              DATETIME not null /* Дата модиф. */,
@@ -144,11 +146,12 @@ create table GPS_HISTORY
    PROVIDER             VARCHAR(30) /* Постащик координат */,
    SPEED                FLOAT /* Скорость */,
    BATTERY_LEVEL        INT(3) /* Уровень заряда батареи */,
-   BATTERT_STATUS       INT(3) /* Статус заряда батареи */,
+   BATTERY_STATUS       INT(3) /* Статус заряда батареи */,
    ACCURACY             FLOAT /* Точность */,
-   primary key (DEVICE_ID, REC_DATE)
-);
+   primary key (REC_ID),
+   key AK_GPS_HISTORY (REC_DATE, DEVICE_ID)
+)
+Engine = InnoDB;
 
-alter table GPS_HISTORY add constraint FK_GPS_DEVICE_DEVICE_ID foreign key (DEVICE_ID)
+alter table GPS_HISTORY add constraint FK_GPS_HIST_DEVICE_ID foreign key (DEVICE_ID)
       references GPS_DEVICE (DEVICE_ID) on delete restrict on update restrict;
-	  
