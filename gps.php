@@ -24,7 +24,7 @@ const GPS_LOCATION_RANGE_DEFAULT = 500;
 $db = new mysql(DB_HOST, '', DB_USER, DB_PASSWORD, DB_NAME);
 
 include_once("./load_settings.php");
-
+var_dump($_REQUEST);
 if ($_REQUEST['location'])
 {
    $tmp = explode(',', $_REQUEST['location']);
@@ -104,25 +104,29 @@ if ($_REQUEST['op'] != '')
    exit;
 }
 
-if (isset($_REQUEST['latitude']))
+
+$gps = new app_gpstrack();
+
+$isValidLocation = $gps->IsValidGpsLocation($_REQUEST['latitude'], $_REQUEST['latitude']);
+
+if ($isValidLocation) 
 {
+   $latitude  = (float)$_REQUEST['latitude'];
+   $longitude = (float)$_REQUEST['longitude'];
+
    //DebMes("GPS DATA RECEIVED: \n".serialize($_REQUEST));
-   if ($_REQUEST['deviceid'])
+   if (!$gps->IsNullOrEmptyString($_REQUEST['deviceid']))
    {
-      $sqlQuery = "SELECT *
-                     FROM gpsdevices
-                    WHERE DEVICEID = '" . DBSafe($_REQUEST['deviceid']) . "'";
+      $isDeviceExist   = $gps->IsDeviceByCode($_REQUEST['deviceid']);
       
-      $device = SQLSelectOne($sqlQuery);
-      
-      if (!$device['ID'])
+      if (!$isDeviceExist)
       {
          $device = array();
 
          $device['DEVICEID'] = $_REQUEST['deviceid'];
          $device['TITLE']    = 'New GPS Device';
 
-         if ($_REQUEST['token'])
+         if (!$gps->IsNullOrEmptyString($_REQUEST['token']))
             $device['TOKEN'] = $_REQUEST['token'];
          
          $device['ID'] = SQLInsert('gpsdevices', $device);
@@ -134,8 +138,8 @@ if (isset($_REQUEST['latitude']))
          SQLExec($sqlQuery);
       }
       
-      $device['LAT']     = $_REQUEST['latitude'];
-      $device['LON']     = $_REQUEST['longitude'];
+      $device['LAT']     = $latitude;
+      $device['LON']     = $longitude;
       $device['UPDATED'] = date('Y-m-d H:i:s');
       
       SQLUpdate('gpsdevices', $device);
@@ -144,8 +148,8 @@ if (isset($_REQUEST['latitude']))
    $rec = array();
    
    $rec['ADDED']     = ($time) ? $time : date('Y-m-d H:i:s');
-   $rec['LAT']       = $_REQUEST['latitude'];
-   $rec['LON']       = $_REQUEST['longitude'];
+   $rec['LAT']       = $latitude;
+   $rec['LON']       = $longitude;
    $rec['ALT']       = round($_REQUEST['altitude'], 2);
    $rec['PROVIDER']  = $_REQUEST['provider'];
    $rec['SPEED']     = round($_REQUEST['speed'], 2);
@@ -204,9 +208,6 @@ if (isset($_REQUEST['latitude']))
    }
 
    // checking locations
-   $lat = (float)$_REQUEST['latitude'];
-   $lon = (float)$_REQUEST['longitude'];
-
    $locations = SQLSelect("SELECT * FROM gpslocations");
    $total     = count($locations);
 
@@ -217,7 +218,7 @@ if (isset($_REQUEST['latitude']))
       if (!$locations[$i]['RANGE'])
          $locations[$i]['RANGE'] = GPS_LOCATION_RANGE_DEFAULT;
       
-      $distance = calculateTheDistance($lat, $lon, $locations[$i]['LAT'], $locations[$i]['LON']);
+      $distance = calculateTheDistance($latitude, $longitude, $locations[$i]['LAT'], $locations[$i]['LON']);
       
       //echo ' (' . $locations[$i]['LAT'] . ' : ' . $locations[$i]['LON'] . ') ' . $distance . ' m';
       if ($distance <= $locations[$i]['RANGE'])

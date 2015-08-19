@@ -574,7 +574,41 @@ EOD;
     */
    public function SetLocation($object)
    {
-      $locationID = SQLInsert('GPS_LOCATION', $object);
+      $poiID    = $this->GetGpsLocationMaxID() + 1;
+      $poiName  = $object['POI_NAME'];
+      $poiLat   = $object['POI_LAT'];
+      $poiLng   = $object['POI_LNG'];
+      $poiRange = $object['POI_RANGE'];
+
+      if ($this->IsNullOrEmptyString($poiName))
+         throw new Exception('Location name (POI_NAME) is null');
+
+      if ($this->IsNullOrEmptyString($poiLat))
+         throw new Exception('Location latitude (POI_LAT) is null');
+
+      if (!is_float($poiLat))
+         throw new Exception('Location latitude (POI_LAT) is not float value');
+
+      if ($this->IsNullOrEmptyString($poiLng))
+         throw new Exception('Location longitude (POI_LNG) is null');
+
+      if (!is_float($poiLng))
+         throw new Exception('Location longitude (POI_LNG) is not float value');
+
+      if (!$this->IsNullOrEmptyString($poiRange) && !is_numeric($poiRange))
+         throw new Exception('Wrong range (POI_RANGE)');
+
+
+      $location["POI_ID"]    = $poiID;
+      $location["POI_NAME"]  = $poiName;
+      $location['POI_LAT']   = $poiLat;
+      $location['POI_LNG']   = $poiLng;
+      $location["LM_DATE"]   = date("Y-m-d H:i:s");
+      $location["POI_RANGE"] = $poiRange;
+      
+
+
+      $locationID = SQLInsert('GPS_LOCATION', $location);
 
       return $locationID;
    }
@@ -722,6 +756,20 @@ EOD;
 
       return $action['ACTION_ID'];
    }
+
+   /**
+    * Get max location ID
+    * @return mixed
+    */
+   private function GetGpsLocationMaxID()
+   {
+      $sqlQuery = "select max(POI_ID) POI_ID
+                     from GPS_LOCATION";
+
+      $action = SQLSelectOne($sqlQuery);
+
+      return $action['POI_ID'];
+   }
    
    public function SetGpsDevice($rec)
    {
@@ -744,9 +792,8 @@ EOD;
       if ($this->IsNullOrEmptyString($userID))
          throw new Exception('User ID (USER_ID) is null');
 
-      if (!$this->IsDeviceByCode($deviceCode))
+      if ($this->IsDeviceByCode($deviceCode))
       {
-         DebMes('no device');
          throw new Exception('Device (' . $deviceCode . ') already exist');
       }
 
@@ -842,7 +889,7 @@ EOD;
     * @param mixed $deviceCode Device Code
     * @return bool
     */
-   private function IsDeviceByCode($deviceCode)
+   public function IsDeviceByCode($deviceCode)
    {
       $sqlQuery = "select DEVICE_ID
                      from DEVICE
@@ -850,7 +897,7 @@ EOD;
       
       $device = SQLSelectOne($sqlQuery);
       
-      if ($this->IsNullOrEmptyString($device['DEVICE_ID']))
+      if (!$this->IsNullOrEmptyString($device['DEVICE_ID']))
          return true;
       
       return false;
@@ -893,13 +940,30 @@ EOD;
    }
 
    /**
-    Return error message
+    * Return error message
     * @param mixed $ex Exception
     * @return string
     */
    public function GetExceptionMessage($ex)
    {
       return 'Exception code: ' . $ex->getCode() . ' File: ' . $ex->getFile() . ' Line: ' . $ex->getLine() . ' Message: ' . $ex->getMessage();
+   }
+
+   /**
+    * Check for valid gps coordinates
+    * @param mixed $latitude  Latitude
+    * @param mixed $longitude Longitude
+    * @return bool
+    */
+   public function IsValidGpsLocation($latitude, $longitude)
+   {
+      if($this->IsNullOrEmptyString($latitude) || $this->IsNullOrEmptyString($longitude))
+         return false;
+
+      if(!is_float($latitude) || !is_float($longitude))
+         return false;
+
+      return true;
    }
 
 }
