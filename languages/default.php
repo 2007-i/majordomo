@@ -124,6 +124,7 @@ $dictionary=array(
 'MODULE_SOUNDFILES'=>'Sound files',
 'MODULE_SYSTEM_ERRORS'=>'System Errors', 
 'MODULE_MODULES'=>'Modules', 
+'MODULE_USERLOG'=>'User log', 
 
 'SETUP'=>'Setup', 
 
@@ -1013,6 +1014,7 @@ $dictionary=array(
 'PATTERN_CONDITIONAL'=>'Conditional',
 'CONDITION'=>'Condition',
 'ADD_EXIT_CODE'=>'Add "exit" code',
+'SMART_REPEAT'=>'Smart Repeat',
 
 'TEST'=>'test'
 
