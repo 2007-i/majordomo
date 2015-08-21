@@ -11,6 +11,25 @@
 include_once("./config.php");
 include_once("./lib/loader.php");
 
+/*
+Big Brother GPS format
+
+time:         Client Time
+latitude:     Latitude(decimal degree)
+longitude:    Longitude(decimal degree)
+accuracy:     Accuracy(m)
+altitude:     Altitude(m)
+provider:     Provider
+bearing:      Bearing(degrees)
+speed:        Speed(m/s)
+battlevel:    percentage
+charging:     Charging(0 or 1)
+secret:       Secret (string)
+deviceid:     Device ID
+subscriberid: Subscriber ID
+
+ */
+
 // start calculation of execution time
 startMeasure('TOTAL');
 
@@ -18,14 +37,12 @@ include_once(DIR_MODULES . "application.class.php");
 
 $session = new session("prj");
 
-const GPS_LOCATION_RANGE_DEFAULT = 500;
-
 // connecting to database
 $db = new mysql(DB_HOST, '', DB_USER, DB_PASSWORD, DB_NAME);
 
 include_once("./load_settings.php");
-var_dump($_REQUEST);
-if ($_REQUEST['location'])
+
+if (isset($_REQUEST['location']))
 {
    $tmp = explode(',', $_REQUEST['location']);
    
@@ -33,83 +50,95 @@ if ($_REQUEST['location'])
    $_REQUEST['longitude'] = $tmp[1];
 }
 
-if ($_REQUEST['op'] != '')
-{
-   $op = $_REQUEST['op'];
-   $ok = 0;
-   
-   if ($op == 'zones')
-   {
-      $zones = SQLSelect("SELECT * FROM gpslocations");
-      echo json_encode(array('RESULT' => array('ZONES' => $zones, 'STATUS' => 'OK')));
-      $ok = 1;
-   }
-
-   if ($op == 'add_zone' && $_REQUEST['latitude'] && $_REQUEST['longitude'] && $_REQUEST['title'])
-   {
-      global $title;
-      global $range;
-
-      $sqlQuery = "SELECT *
-                     FROM gpslocations
-                    WHERE TITLE LIKE '" . DBSafe($title) . "'";
-      
-      $old_location = SQLSelect($sqlQuery);
-      
-      if ($old_location['ID'])
-         $title .= ' (1)';
-      
-      if (!$range)
-         $range = 200;
-      
-      $rec = array();
-      
-      $rec['TITLE'] = $title;
-      $rec['LAT']   = $_REQUEST['latitude'];
-      $rec['LON']   = $_REQUEST['longitude'];
-      $rec['RANGE'] = (int)$range;
-      $rec['ID']    = SQLInsert('gpslocations', $rec);
-      
-      echo json_encode(array('RESULT' => array('STATUS' => 'OK')));
-      
-      $ok = 1;
-   }
-
-   if ($op == 'set_token' && $_REQUEST['token'] && $_REQUEST['deviceid'])
-   {
-      $sqlQuery = "SELECT *
-                     FROM gpsdevices
-                    WHERE DEVICEID = '" . DBSafe($_REQUEST['deviceid']) . "'";
-      
-      $device = SQLSelectOne($sqlQuery);
-      
-      if (!$device['ID'])
-      {
-         $device = array();
-
-         $device['DEVICEID'] = $_REQUEST['deviceid'];
-         $device['TITLE']    = 'New GPS Device';
-         $device['ID']       = SQLInsert('gpsdevices', $device);
-      }
-
-      $device['TOKEN'] = $_REQUEST['token'];
-      SQLUpdate('gpsdevices', $device);
-      $ok = 1;
-   }
-
-   if (!$ok)
-      echo json_encode(array('RESULT' => array('STATUS' => 'FAIL')));
-
-   $db->Disconnect();
-   exit;
-}
-
-
 $gps = new app_gpstrack();
 
 $isValidLocation = $gps->IsValidGpsLocation($_REQUEST['latitude'], $_REQUEST['latitude']);
 
-if ($isValidLocation) 
+
+if (!$gps->IsNullOrEmptyString($_REQUEST['op']))
+{
+   $op = $_REQUEST['op'];
+   
+   $ok = false;
+   
+   if ($op == 'zones')
+   {
+      $zones = $gps->SelectLocations(null, null);
+      echo json_encode(array('RESULT' => array('ZONES' => $zones, 'STATUS' => 'OK')));
+      $ok = true;
+   }
+
+   if ($op == 'add_zone' && $isValidLocation)
+   {
+      try
+      {
+         global $title;
+         global $range;
+         
+         if (!$range)
+            $range = $gps->GetDefaultGpsRange();
+
+         $rec = array();
+
+         $rec['POI_NAME']  = $title;
+         $rec['POI_LAT']   = (float)$latitude;
+         $rec['POI_LNG']   = (float)$longitude;
+         $rec['POI_RANGE'] = (int)$range;
+         
+         $locationID = $gps->SetLocation($rec);
+
+         echo json_encode(array('RESULT' => array('STATUS' => 'OK')));
+
+         $ok = true;
+
+      }
+      catch(Exception $ex)
+      {
+         DebMes($gps->GetExceptionMessage($ex));
+      }
+   }
+
+   if ($op == 'set_token' && isset($_REQUEST['token']) && !$gps->IsNullOrEmptyString($_REQUEST['deviceid']))
+   {
+      try
+      {
+         $deviceCode  = $_REQUEST['deviceid'];
+         $deviceToken = $_REQUEST['token'];
+         $deviceID    = $gps->GetDeviceIDByCode($deviceCode);
+         $userID      = 0;
+         
+         if ($deviceID == -1)
+         {
+            $device = array();
+            $device['DEVICE_NAME']  = $deviceCode;
+            $device['DEVICE_CODE']  = $deviceCode;
+            $device['DEVICE_TOKEN'] = $deviceToken;
+            $device['USER_ID']      = $userID;
+
+            $deviceID = $gps->SetGpsDevice($device);
+         }
+         else
+         {
+            $gps->UpdateDeviceToken($deviceID, $deviceToken);
+         }
+
+         $ok = true;
+      }
+      catch(Exception $ex)
+      {
+         $message = $gps->GetExceptionMessage($ex);
+         DebMes($message);
+      }
+   }
+   
+   if ($ok == false)
+      echo json_encode(array('RESULT' => array('STATUS' => 'FAIL')));
+   
+   $db->Disconnect();
+   exit;
+}
+
+if ($isValidLocation)
 {
    $latitude  = (float)$_REQUEST['latitude'];
    $longitude = (float)$_REQUEST['longitude'];
@@ -190,7 +219,7 @@ if ($isValidLocation)
 
          if ($prev_log['ID'])
          {
-            $distance = calculateTheDistance($rec['LAT'], $rec['LON'], $prev_log['LAT'], $prev_log['LON']);
+            $distance = $gps->GetDistanceBetweenPoints($rec['LAT'], $rec['LON'], $prev_log['LAT'], $prev_log['LON']);
             
             if ($distance > 100)
             {
@@ -216,9 +245,9 @@ if ($isValidLocation)
    for ($i = 0; $i < $total; $i++)
    {
       if (!$locations[$i]['RANGE'])
-         $locations[$i]['RANGE'] = GPS_LOCATION_RANGE_DEFAULT;
+         $locations[$i]['RANGE'] = $gps->GetDefaultGpsRange();
       
-      $distance = calculateTheDistance($latitude, $longitude, $locations[$i]['LAT'], $locations[$i]['LON']);
+      $distance = $gps->GetDistanceBetweenPoints($latitude, $longitude, $locations[$i]['LAT'], $locations[$i]['LON']);
       
       //echo ' (' . $locations[$i]['LAT'] . ' : ' . $locations[$i]['LON'] . ') ' . $distance . ' m';
       if ($distance <= $locations[$i]['RANGE'])
@@ -375,38 +404,3 @@ $db->Disconnect();
 
 endMeasure('TOTAL'); // end calculation of execution time
 
-/**
- * Calculate distance between two GPS coordinates
- * @param mixed $latA First coord latitude
- * @param mixed $lonA First coord longitude
- * @param mixed $latB Second coord latitude
- * @param mixed $lonB Second coord longitude
- * @return double
- */
-function calculateTheDistance($latA, $lonA, $latB, $lonB)
-{
-   define('EARTH_RADIUS', 6372795);
-   
-   $lat1  = $latA * M_PI / 180;
-   $lat2  = $latB * M_PI / 180;
-   $long1 = $lonA * M_PI / 180;
-   $long2 = $lonB * M_PI / 180;
-
-   $cl1 = cos($lat1);
-   $cl2 = cos($lat2);
-   $sl1 = sin($lat1);
-   $sl2 = sin($lat2);
-
-   $delta  = $long2 - $long1;
-   $cdelta = cos($delta);
-   $sdelta = sin($delta);
-
-   $y = sqrt(pow($cl2 * $sdelta, 2) + pow($cl1 * $sl2 - $sl1 * $cl2 * $cdelta, 2));
-   $x = $sl1 * $sl2 + $cl1 * $cl2 * $cdelta;
-
-   $ad = atan2($y, $x);
-   
-   $dist = round($ad * EARTH_RADIUS);
-
-   return $dist;
-}

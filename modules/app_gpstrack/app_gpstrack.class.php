@@ -13,7 +13,9 @@
 
 class app_gpstrack extends module
 {
-   const GPS_DEVICE_TYPE = 'GPS';
+   const GPS_DEVICE_TYPE            = 'GPS';
+   const GPS_LOCATION_RANGE_DEFAULT = 500;
+   const EARTH_RADIUS               = 6372795;
 
    /**
     * Module class constructor
@@ -541,10 +543,13 @@ EOD;
     */
    public function SelectLocations($query, $orderBy)
    {
+      $queryWhere = $this->IsNullOrEmptyString($query) ? 1 : $query;
+      $queryOrder = $this->IsNullOrEmptyString($orderBy) ? 'POI_NAME' : $orderBy;
+
       $sqlQuery = "select POI_ID, POI_NAME, POI_LAT, POI_LNG, LM_DATE, POI_RANGE
                      from GPS_LOCATION
-                    where " . $query . "
-                    order by " . $orderBy;
+                    where " . $queryWhere . "
+                    order by " . $queryOrder;
 
       $locations = SQLSelect($sqlQuery);
 
@@ -808,6 +813,8 @@ EOD;
 
       $deviceID = SQLInsert('DEVICE', $device);
 
+      $this->SetGpsCurrentPosition($deviceID,0,0);
+
       return $deviceID;
    }
 
@@ -842,6 +849,20 @@ EOD;
       $obj["USER_ID"]     = $userID;
       $obj["DEVICE_ID"]   = $deviceID;
       $obj["LM_DATE"]     = date("Y-m-d H:i:s");
+
+      $isUpdated = SQLUpdate("DEVICE", $obj, "DEVICE_ID");
+
+      return $isUpdated;
+   }
+
+   public function UpdateDeviceToken($deviceID, $deviceToken)
+   {
+      if ($this->IsNullOrEmptyString($deviceID))
+         throw new Exception('Device ID (DEVICE_ID) is null');
+
+      $obj = array();
+      $obj["DEVICE_ID"]    = $deviceID;
+      $obj["DEVICE_TOKEN"] = $deviceToken;
 
       $isUpdated = SQLUpdate("DEVICE", $obj, "DEVICE_ID");
 
@@ -885,15 +906,52 @@ EOD;
    }
 
    /**
-    * Check for device code exists
-    * @param mixed $deviceCode Device Code
+    * Set current postition of device
+    * @param mixed $deviceID  Device ID
+    * @param mixed $latitude  Device Latitude
+    * @param mixed $longitude Device Longitude
     * @return bool
     */
-   public function IsDeviceByCode($deviceCode)
+   public function SetGpsCurrentPosition($deviceID, $latitude, $longitude)
+   {
+      try
+      {
+         if ($this->IsNullOrEmptyString($deviceID))
+            return false;
+
+         if (!$this->IsValidGpsLocation($latitude, $longitude))
+            return false;
+
+         $location = array();
+
+         $location['DEVICE_ID'] = $deviceID;
+         $location['LATITUDE']  = (float)$latitude;
+         $location['LONGITUDE'] = (float)$longitude;
+         $location['LM_DATE']   = date("Y-m-d H:i:s");
+
+         if ($this->IsGpsPositionExist($deviceID))
+            return (bool)SQLUpdate("GPS_DEVICE", $location, "DEVICE_ID");
+
+         SQLInsert('GPS_DEVICE', $location);
+
+         return true;
+      }
+      catch(Exception $ex)
+      {
+         return false;
+      }
+   }
+
+   /**
+    * Check for device position exist
+    * @param mixed $deviceID Device ID
+    * @return bool
+    */
+   public function IsGpsPositionExist($deviceID)
    {
       $sqlQuery = "select DEVICE_ID
-                     from DEVICE
-                    where DEVICE_CODE = '" . $deviceCode . "'";
+                     from GPS_DEVICE
+                    where DEVICE_ID = " . $deviceID;
       
       $device = SQLSelectOne($sqlQuery);
       
@@ -901,6 +959,41 @@ EOD;
          return true;
       
       return false;
+   }
+
+
+   /**
+    * Check for device code exists
+    * @param mixed $deviceCode Device Code
+    * @return bool
+    */
+   public function IsDeviceByCode($deviceCode)
+   {
+      $deviceID = $this->GetDeviceIDByCode($deviceCode);
+      
+      if (!$deviceID == -1)
+         return true;
+      
+      return false;
+   }
+
+   /**
+    * Get Device ID by device code
+    * @param mixed $deviceCode Device code
+    * @return int return -1 if device not found
+    */
+   public function GetDeviceIDByCode($deviceCode)
+   {
+      $sqlQuery = "select DEVICE_ID
+                     from DEVICE
+                    where DEVICE_CODE = '" . $deviceCode . "'";
+
+      $device = SQLSelectOne($sqlQuery);
+
+      if ($this->IsNullOrEmptyString($device['DEVICE_ID']))
+         return (int)-1;
+
+      return (int)$device['DEVICE_ID'];
    }
 
    /**
@@ -964,6 +1057,84 @@ EOD;
          return false;
 
       return true;
+   }
+
+   /**
+    * Return default GPS range
+    * @return int
+    */
+   public function GetDefaultGpsRange()
+   {
+      return self::GPS_LOCATION_RANGE_DEFAULT;
+   }
+
+   /**
+    * Calculate distance between two GPS coordinates
+    * @param mixed $latA First coord latitude
+    * @param mixed $lonA First coord longitude
+    * @param mixed $latB Second coord latitude
+    * @param mixed $lonB Second coord longitude
+    * @return double
+    */
+   function GetDistanceBetweenPoints($latA, $lonA, $latB, $lonB)
+   {
+      $lat1  = $latA * M_PI / 180;
+      $lat2  = $latB * M_PI / 180;
+      $long1 = $lonA * M_PI / 180;
+      $long2 = $lonB * M_PI / 180;
+
+      $cl1 = cos($lat1);
+      $cl2 = cos($lat2);
+      $sl1 = sin($lat1);
+      $sl2 = sin($lat2);
+
+      $delta  = $long2 - $long1;
+      $cdelta = cos($delta);
+      $sdelta = sin($delta);
+
+      $y = sqrt(pow($cl2 * $sdelta, 2) + pow($cl1 * $sl2 - $sl1 * $cl2 * $cdelta, 2));
+      $x = $sl1 * $sl2 + $cl1 * $cl2 * $cdelta;
+
+      $ad = atan2($y, $x);
+      
+      $dist = round($ad * self::EARTH_RADIUS);
+
+      return $dist;
+   }
+
+   /**
+    * Get random GUID
+    * @return string
+    */
+   public function GetGUID()
+   {
+      $guid = sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X', mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535),
+                      mt_rand(16384, 20479), mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535));
+      
+      return $guid;
+   }
+
+
+   public function UpdateDeviceLocation($postRequest)
+   {
+      $deviceLatitude  = 0;
+      $deviceLongitude = 0;
+
+      if (isset($postRequest['location']))
+      {
+         $tmp = explode(',', $postRequest['location']);
+         
+         $deviceLatitude  = $tmp[0];
+         $deviceLongitude = $tmp[1];
+      }
+      else
+      {
+         $deviceLatitude  = $postRequest['latitude'];
+         $deviceLongitude = $postRequest['latitude'];
+      }
+
+      $isValidLocation = $this->IsValidGpsLocation($deviceLatitude,$deviceLongitude);
+
    }
 
 }

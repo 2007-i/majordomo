@@ -26,6 +26,43 @@ if ($body === false)
    exit;
 }
 
+/*
+   // BTRACED XML description
+   <bwiredtravel>
+      <model>iPhone</model>
+      <devId>21622f43420a5590f327fcd78efb753c55189bff</devId>
+      <username>pk</username>
+      <password>testing</password>
+      <travel>
+         <id>1</id> 
+         <description>23-03-12 bike</description> 
+         <length>2954.76</length>
+         <time>1014</time>
+         <tpoints>129</tpoints>
+         <uplpoints>100</uplpoints> 
+         <point>
+            <id>104</id>
+            <date>1332524797.424494</date>
+            <lat>+51.724043</lat>
+            <lon>+5.300559</lon>
+            <speed>3.911873</speed> 
+            <course>72.584372</course>
+            <haccu>10.000000</haccu>
+            <bat>0.40</bat>
+            <vaccu>9.000000</vaccu>
+            <altitude>1.645592</altitude>
+            <continous>0</continous>
+            <tdist>2559.39</tdist>
+            <rdist>97.17</rdist>
+            <ttime>811</ttime>
+         </point>
+      </travel>
+   </bwiredtravel>
+ */
+
+
+
+
 // Try to load the XML
 $xml = simplexml_load_string($body);
 
