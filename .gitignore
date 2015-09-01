@@ -12,3 +12,4 @@ reboot
 *.suo
 *.phpproj.user
 .vs/*
+Doc/Model/MajorDoMo.pdb

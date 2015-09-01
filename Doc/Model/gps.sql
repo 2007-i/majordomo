@@ -29,14 +29,15 @@ create table DEVICE
    LM_DATE              DATETIME not null /* Дата модиф. */,
    FLAG_DEL             VARCHAR(1) not null /* Флаг: удалено */,
    FLAG_GPS             VARCHAR(1) not null /* Флаг: GPS */,
+   TOKEN                VARCHAR(64) /* Токен */,
    primary key (DEVICE_ID),
    key AK_DEVICE (TYPE_ID, DEVICE_NAME),
    unique key AK_DEVICE_CODE (DEVICE_CODE)
-);
+)
+type = InnoDB;
 
 alter table DEVICE add constraint FK_DEVICE_TYPE__TYPE_ID foreign key (TYPE_ID)
       references DEVICE_TYPE (TYPE_ID) on delete restrict on update restrict;
-
 
 
 
@@ -52,8 +53,15 @@ create table GPS_DEVICE
    LATITUDE             FLOAT(18,15) not null /* Коорд. широта */,
    LONGITUDE            FLOAT(18,15) not null /* Коорд. долгота */,
    LM_DATE              DATETIME not null /* Дата модиф. */,
+   ALTITUDE             FLOAT /* Высота над уровнем моря */,
+   PROVIDER             VARCHAR(30) /* Постащик координат */,
+   SPEED                FLOAT /* Скорость */,
+   BATTERY_LEVEL        INT(3) /* Уровень заряда батареи */,
+   BATTERY_STATUS       INT(3) /* Статус заряда батареи */,
+   ACCURACY             FLOAT /* Точность */,
    primary key (DEVICE_ID)
-);
+)
+type = InnoDB;
 
 alter table GPS_DEVICE add constraint FK_DEVICE__DEVICE_ID foreign key (DEVICE_ID)
       references DEVICE (DEVICE_ID) on delete restrict on update restrict;
@@ -136,7 +144,7 @@ drop table if exists GPS_HISTORY;
 /*==============================================================*/
 create table GPS_HISTORY
 (
-   REC_ID               INT(10) not null /* ID записи */,
+   REC_ID               INT(10) not null auto_increment /* ID записи */,
    REC_DATE             DATETIME not null /* Дата записи */,
    DEVICE_ID            INT(10) not null /* ID устройства */,
    LATITUDE             FLOAT(18,15) not null /* Коорд. широта */,
@@ -151,7 +159,30 @@ create table GPS_HISTORY
    primary key (REC_ID),
    key AK_GPS_HISTORY (REC_DATE, DEVICE_ID)
 )
-Engine = InnoDB;
+type = InnoDB;
 
 alter table GPS_HISTORY add constraint FK_GPS_HIST_DEVICE_ID foreign key (DEVICE_ID)
       references GPS_DEVICE (DEVICE_ID) on delete restrict on update restrict;
+
+drop table if exists BUF_GPS;
+
+/*==============================================================*/
+/* Table: BUF_GPS                                               */
+/*==============================================================*/
+create table BUF_GPS
+(
+   REC_ID               INT(20) not null auto_increment /* ID записи */,
+   DEVICE_CODE          VARCHAR(64) not null /* Код устройства */,
+   LM_DATE              DATETIME not null /* Дата модиф. */,
+   LATITUDE             FLOAT(18,15) /* Коорд. широта */,
+   LONGITUDE            FLOAT(18,15) /* Коорд. долгота */,
+   ALTITUDE             FLOAT /* Высота над уровнем моря */,
+   PROVIDER             VARCHAR(30) /* Постащик координат */,
+   SPEED                FLOAT /* Скорость */,
+   BATTERY_LEVEL        INT(3) /* Уровень заряда батареи */,
+   BATTERY_STATUS       INT(3) /* Статус заряда батареи */,
+   ACCURACY             FLOAT /* Точность */,
+   TOKEN                VARCHAR(64) /* Токен */,
+   primary key (REC_ID),
+   unique key AK_DEVICE_CODE (DEVICE_CODE)
+);

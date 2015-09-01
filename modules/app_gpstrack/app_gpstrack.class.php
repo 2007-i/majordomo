@@ -16,6 +16,7 @@ class app_gpstrack extends module
    const GPS_DEVICE_TYPE            = 'GPS';
    const GPS_LOCATION_RANGE_DEFAULT = 500;
    const EARTH_RADIUS               = 6372795;
+   const MIN_OLD_NEW_COORD_DISTANCE = 100;
 
    /**
     * Module class constructor
@@ -728,9 +729,10 @@ EOD;
       if ($this->IsNullOrEmptyString($deviceID))
          return false;
 
-      $sqlQuery = "select d.DEVICE_ID, d.TYPE_ID, d.DEVICE_NAME, d.DEVICE_CODE, d.USER_ID, g.LATITUDE, g.LONGITUDE, g.LM_DATE
+      $sqlQuery = "select d.DEVICE_ID, d.TYPE_ID, d.DEVICE_NAME, d.DEVICE_CODE, d.USER_ID, u.LINKED_OBJECT, g.LATITUDE, g.LONGITUDE, g.LM_DATE
                      from DEVICE d
                      left join GPS_DEVICE g on (g.DEVICE_ID = d.DEVICE_ID)
+                     left join USERS u on (u.ID = d.USER_ID)
                     where d.DEVICE_ID = " . $deviceID;
 
       $device = SQLSelectOne($sqlQuery);
@@ -942,6 +944,53 @@ EOD;
       }
    }
 
+   public function SetGpsCurrentInfo($deviceID, $info)
+   {
+      $rec = array();
+
+      $rec['DEVICE_ID']      = $deviceID;
+      $rec['LATITUDE']       = $info['LATITUDE'];
+      $rec['LONGITUDE']      = $info['LONGITUDE'];
+      $rec['LM_DATE']        = $info['LM_DATE'];
+      $rec['ALTITUDE']       = $info['ALTITUDE'];
+      $rec['PROVIDER']       = $info['PROVIDER'];
+      $rec['SPEED']          = $info['SPEED'];
+      $rec['BATTERY_LEVEL']  = $info['BATTERY_LEVEL'];
+      $rec['BATTERY_STATUS'] = $info['BATTERY_STATUS'];
+      $rec['ACCURACY']       = $info['ACCURACY'];
+
+      $isUpdate = SQLUpdate('GPS_DEVICE', $info, 'DEVICE_ID');
+
+      if ($isUpdate)
+         $this->SetGpsHistory($info);
+
+      return $isUpdate;
+   }
+
+   public function GetGpsCurrentPosition($deviceID)
+   {
+      if ($this->IsNullOrEmptyString($deviceID))
+         return array();
+
+      if (!is_numeric($deviceID))
+         return array();
+
+      $sqlQuery = "select d.LATITUDE, d.LONGITUDE, h.LM_DATE
+                     from GPS_DEVICE d
+                    where d.DEVICE_ID = " . $deviceID;
+
+      $position = SQLSelectOne($sqlQuery);
+
+      return $position;
+   }
+
+
+   private function SetGpsHistory($deviceInfo)
+   {
+      $deviceInfo['REC_DATE'] = date('Y-m-d H:i:s');
+      SQLInsert('GPS_HISTORY', $deviceInfo);
+   }
+
    /**
     * Check for device position exist
     * @param mixed $deviceID Device ID
@@ -1114,27 +1163,115 @@ EOD;
       return $guid;
    }
 
-
-   public function UpdateDeviceLocation($postRequest)
+   /**
+    * Add device to buffer(temp) table
+    * @param mixed $device Device info
+    */
+   public function AddDeviceToBuf($device)
    {
-      $deviceLatitude  = 0;
-      $deviceLongitude = 0;
+      if ($this->IsNullOrEmptyString($device['DEVICE_CODE']))
+         return;
 
-      if (isset($postRequest['location']))
+      if ($this->IsBufDeviceByCode($device["DEVICE_CODE"]))
       {
-         $tmp = explode(',', $postRequest['location']);
-         
-         $deviceLatitude  = $tmp[0];
-         $deviceLongitude = $tmp[1];
+         SQLUpdate("BUF_GPS", $device, "DEVICE_CODE");
       }
       else
       {
-         $deviceLatitude  = $postRequest['latitude'];
-         $deviceLongitude = $postRequest['latitude'];
+         SQLInsert('BUF_GPS', $device);
       }
-
-      $isValidLocation = $this->IsValidGpsLocation($deviceLatitude,$deviceLongitude);
-
    }
 
+   /**
+    * Return prepared device
+    * @param mixed $postRequest Http request param
+    * @return array
+    */
+   public function PrepareGPSDeviceParam($postRequest)
+   {
+      $device = array();
+      $device["DEVICE_CODE"]    = $postRequest['deviceid'];
+      $device["LM_DATE"]        =  date('Y-m-d H:i:s');
+      $device["LATITUDE"]       = $postRequest['latitude'];
+      $device["LONGITUDE"]      = $postRequest['longitude'];
+      $device["ALTITUDE"]       = round($postRequest['altitude'], 2);
+      $device["PROVIDER"]       = $postRequest['provider'];
+      $device["SPEED"]          = round($postRequest['speed'], 2);
+      $device["BATTERY_LEVEL"]  = $postRequest['battlevel'];
+      $device["BATTERY_STATUS"] = (int)$postRequest['charging'];
+      $device["ACCURACY"]       = isset($_REQUEST['accuracy']) ? $_REQUEST['accuracy'] : 0;
+      $device["TOKEN"]          = $postRequest['token'];
+
+      return $device;
+   }
+
+   /**
+    * Get device info from buf by device code
+    * @param mixed $deviceCode Device code
+    * @return array
+    */
+   public function SelectDeviceFromBuf($deviceCode)
+   {
+      $sqlQuery = "select *
+                     from BUF_GPS
+                    where DEVICE_CODE = '" . $deviceCode . "'";
+
+      $device = SQLSelectOne($sqlQuery);
+
+      return $device;
+   }
+
+   /**
+    * Check for device in buf
+    * @param mixed $deviceCode 
+    * @return bool
+    */
+   private function IsBufDeviceByCode($deviceCode)
+   {
+      $device = $this->SelectDeviceFromBuf($deviceCode);
+      
+      if (!$this->IsNullOrEmptyString($device['DEVICE_CODE']))
+         return true;
+
+      return false;
+   }
+
+
+   public function UpdateGpsDeviceInfo($info)
+   {
+      try
+      {
+         $deviceCode = $info['DEVICE_CODE'];
+         $deviceID   = $this->GetDeviceIDByCode($deviceCode);
+         
+         if ($deviceID == -1)
+            return false;
+
+         $deviceLatitude  = $info['LATITUDE'];
+         $deviceLongitude = $info['LONGITUDE'];
+
+         $isValidLocation = $this->IsValidGpsLocation($deviceLatitude,$deviceLongitude);
+
+         if (!$isValidLocation)
+            return false;
+
+         $this->SetGpsCurrentInfo($deviceID, $info);
+
+         $this->UpdateDeviceToken($deviceID, $info['TOKEN']);
+
+         return true;
+      }
+      catch(Exception $ex)
+      {
+         $mesage = $this->GetExceptionMessage($ex);
+         DebMes($mesage);
+
+         return false;
+      }
+   }
+
+   public function GetMinGpsCoordDistance()
+   {
+      return self::MIN_OLD_NEW_COORD_DISTANCE;
+   }
 }

@@ -52,25 +52,30 @@ if (isset($_REQUEST['location']))
 
 $gps = new app_gpstrack();
 
-$isValidLocation = $gps->IsValidGpsLocation($_REQUEST['latitude'], $_REQUEST['latitude']);
+$latitude  = $_REQUEST['latitude'];
+$longitude = $_REQUEST['longitude'];
+
+
+$isValidLocation = $gps->IsValidGpsLocation($_REQUEST['latitude'], $_REQUEST['longitude']);
 
 
 if (!$gps->IsNullOrEmptyString($_REQUEST['op']))
 {
    $op = $_REQUEST['op'];
-   
    $ok = false;
-   
-   if ($op == 'zones')
-   {
-      $zones = $gps->SelectLocations(null, null);
-      echo json_encode(array('RESULT' => array('ZONES' => $zones, 'STATUS' => 'OK')));
-      $ok = true;
-   }
 
-   if ($op == 'add_zone' && $isValidLocation)
+   $jsonErrorMessage = json_encode(array('RESULT' => array('STATUS' => 'FAIL')));
+   
+   try
    {
-      try
+      if ($op == 'zones')
+      {
+         $zones = $gps->SelectLocations(null, null);
+         echo json_encode(array('RESULT' => array('ZONES' => $zones, 'STATUS' => 'OK')));
+         $ok = true;
+      }
+
+      if ($op == 'add_zone' && $isValidLocation)
       {
          global $title;
          global $range;
@@ -90,17 +95,9 @@ if (!$gps->IsNullOrEmptyString($_REQUEST['op']))
          echo json_encode(array('RESULT' => array('STATUS' => 'OK')));
 
          $ok = true;
-
       }
-      catch(Exception $ex)
-      {
-         DebMes($gps->GetExceptionMessage($ex));
-      }
-   }
 
-   if ($op == 'set_token' && isset($_REQUEST['token']) && !$gps->IsNullOrEmptyString($_REQUEST['deviceid']))
-   {
-      try
+      if ($op == 'set_token' && isset($_REQUEST['token']) && !$gps->IsNullOrEmptyString($_REQUEST['deviceid']))
       {
          $deviceCode  = $_REQUEST['deviceid'];
          $deviceToken = $_REQUEST['token'];
@@ -124,142 +121,91 @@ if (!$gps->IsNullOrEmptyString($_REQUEST['op']))
 
          $ok = true;
       }
-      catch(Exception $ex)
-      {
-         $message = $gps->GetExceptionMessage($ex);
-         DebMes($message);
-      }
+   
+      if ($ok == false)
+         echo $jsonErrorMessage;
    }
-   
-   if ($ok == false)
-      echo json_encode(array('RESULT' => array('STATUS' => 'FAIL')));
-   
+   catch(Exception $ex)
+   {
+      DebMes($gps->GetExceptionMessage($ex));
+      echo $jsonErrorMessage;
+   }
+
    $db->Disconnect();
    exit;
 }
 
 if ($isValidLocation)
 {
-   $latitude  = (float)$_REQUEST['latitude'];
-   $longitude = (float)$_REQUEST['longitude'];
+   $deviceBuf = $gps->PrepareGPSDeviceParam($_REQUEST);
 
-   //DebMes("GPS DATA RECEIVED: \n".serialize($_REQUEST));
-   if (!$gps->IsNullOrEmptyString($_REQUEST['deviceid']))
+   // check for device exists
+   $deviceID = $gps->GetDeviceIDByCode($deviceBuf['DEVICE_CODE']);
+
+   if ($deviceID != -1)
    {
-      $isDeviceExist   = $gps->IsDeviceByCode($_REQUEST['deviceid']);
-      
-      if (!$isDeviceExist)
+      $curDevicePosition = $gps->GetGpsCurrentPosition($deviceID);
+      $isUpdated = $gps->UpdateGpsDeviceInfo($deviceBuf);
+
+      if ($isUpdated)
       {
-         $device = array();
+         $device = $gps->GetDeviceByID($deviceID);
 
-         $device['DEVICEID'] = $_REQUEST['deviceid'];
-         $device['TITLE']    = 'New GPS Device';
-
-         if (!$gps->IsNullOrEmptyString($_REQUEST['token']))
-            $device['TOKEN'] = $_REQUEST['token'];
+         $distance = $gps->GetDistanceBetweenPoints($device['LATITUDE'], $device['LONGITUDE'], $curDevicePosition['LATITUDE'], $curDevicePosition['LONGITUDE']);
          
-         $device['ID'] = SQLInsert('gpsdevices', $device);
-         
-         $sqlQuery = "UPDATE gpslog
-                         SET DEVICE_ID = '" . $device['ID'] . "'
-                       WHERE DEVICEID = '" . DBSafe($_REQUEST['deviceid']) . "'";
-         
-         SQLExec($sqlQuery);
-      }
-      
-      $device['LAT']     = $latitude;
-      $device['LON']     = $longitude;
-      $device['UPDATED'] = date('Y-m-d H:i:s');
-      
-      SQLUpdate('gpsdevices', $device);
-   }
-
-   $rec = array();
-   
-   $rec['ADDED']     = ($time) ? $time : date('Y-m-d H:i:s');
-   $rec['LAT']       = $latitude;
-   $rec['LON']       = $longitude;
-   $rec['ALT']       = round($_REQUEST['altitude'], 2);
-   $rec['PROVIDER']  = $_REQUEST['provider'];
-   $rec['SPEED']     = round($_REQUEST['speed'], 2);
-   $rec['BATTLEVEL'] = $_REQUEST['battlevel'];
-   $rec['CHARGING']  = (int)$_REQUEST['charging'];
-   $rec['DEVICEID']  = $_REQUEST['deviceid'];
-   $rec['ACCURACY']  = isset($_REQUEST['accuracy']) ? $_REQUEST['accuracy'] : 0;
-
-   if ($device['ID'])
-      $rec['DEVICE_ID'] = $device['ID'];
-   
-   $rec['ID'] = SQLInsert('gpslog', $rec);
-
-   if ($device['USER_ID'])
-   {
-      $sqlQuery = "SELECT *
-                     FROM users
-                    WHERE ID = '" . $device['USER_ID'] . "'";
-      
-      $user = SQLSelectOne($sqlQuery);
-
-      if ($user['LINKED_OBJECT'])
-      {
-         setGlobal($user['LINKED_OBJECT'] . '.Coordinates', $rec['LAT'] . ',' . $rec['LON']);
-         setGlobal($user['LINKED_OBJECT'] . '.CoordinatesUpdated', date('H:i'));
-         setGlobal($user['LINKED_OBJECT'] . '.CoordinatesUpdatedTimestamp', time());
-         setGlobal($user['LINKED_OBJECT'] . '.BattLevel', $rec['BATTLEVEL']);
-         setGlobal($user['LINKED_OBJECT'] . '.Charging', $rec['CHARGING']);
-         
-         $sqlQuery = "SELECT *
-                        FROM gpslog
-                       WHERE ID        != '" . $rec['ID'] . "'
-                         AND DEVICE_ID = '" . $device['ID'] . "'
-                       ORDER BY ID DESC
-                       LIMIT 1";
-
-         $prev_log = SQLSelectOne($sqlQuery);
-
-         if ($prev_log['ID'])
+         if ($distance > $gps->GetMinGpsCoordDistance())
          {
-            $distance = $gps->GetDistanceBetweenPoints($rec['LAT'], $rec['LON'], $prev_log['LAT'], $prev_log['LON']);
-            
-            if ($distance > 100)
+            if (!$gps->IsNullOrEmptyString($device['LINKED_OBJECT']))
             {
+               setGlobal($device['LINKED_OBJECT'] . '.Coordinates', $device['LATITUDE'] . ',' . $device['LONGITUDE']);
+               setGlobal($device['LINKED_OBJECT'] . '.CoordinatesUpdated', date('H:i'));
+               setGlobal($device['LINKED_OBJECT'] . '.CoordinatesUpdatedTimestamp', time());
+               setGlobal($device['LINKED_OBJECT'] . '.BattLevel', $deviceBuf['BATTERY_LEVEL']);
+               setGlobal($device['LINKED_OBJECT'] . '.Charging', $deviceBuf['BATTERY_STATUS']);
+
                //we're moving
-               $objectIsMoving = $user['LINKED_OBJECT'] . '.isMoving';
+               $objectIsMoving = $device['LINKED_OBJECT'] . '.isMoving';
 
                setGlobal($objectIsMoving, 1);
-               clearTimeOut($user['LINKED_OBJECT'] . '_moving');
-               
+               clearTimeOut($device['LINKED_OBJECT'] . '_moving');
+
                // stopped after 15 minutes of inactivity
-               setTimeOut($user['LINKED_OBJECT'] . '_moving', "setGlobal('" . $objectIsMoving . "', 0);", 15 * 60);
+               setTimeOut($device['LINKED_OBJECT'] . '_moving', "setGlobal('" . $objectIsMoving . "', 0);", 15 * 60);
             }
+            checkLocation();
          }
       }
    }
+   else
+   {
+      $gps->AddDeviceToBuf($deviceBuf);
+   }
+}
 
+function checkLocation()
+{
    // checking locations
-   $locations = SQLSelect("SELECT * FROM gpslocations");
+   $locations = $gps->SelectLocations(null,null);
    $total     = count($locations);
 
    $location_found = 0;
    
    for ($i = 0; $i < $total; $i++)
    {
-      if (!$locations[$i]['RANGE'])
-         $locations[$i]['RANGE'] = $gps->GetDefaultGpsRange();
+      if (!$locations[$i]['POI_RANGE'])
+         $locations[$i]['POI_RANGE'] = $gps->GetDefaultGpsRange();
       
-      $distance = $gps->GetDistanceBetweenPoints($latitude, $longitude, $locations[$i]['LAT'], $locations[$i]['LON']);
+      $distance = $gps->GetDistanceBetweenPoints($latitude, $longitude, $locations[$i]['POI_LAT'], $locations[$i]['POI_LNG']);
       
-      //echo ' (' . $locations[$i]['LAT'] . ' : ' . $locations[$i]['LON'] . ') ' . $distance . ' m';
-      if ($distance <= $locations[$i]['RANGE'])
+      if ($distance <= $locations[$i]['POI_RANGE'])
       {
-         //Debmes("Device (" . $device['TITLE'] . ") NEAR location " . $locations[$i]['TITLE']);
          $location_found = 1;
          
          if ($user['LINKED_OBJECT'])
-            setGlobal($user['LINKED_OBJECT'] . '.seenAt', $locations[$i]['TITLE']);
+            setGlobal($user['LINKED_OBJECT'] . '.seenAt', $locations[$i]['POI_NAME']);
          
          // we are at location
-         $rec['LOCATION_ID'] = $locations[$i]['ID'];
+         $rec['LOCATION_ID'] = $locations[$i]['POI_ID'];
          
          SQLUpdate('gpslog', $rec);
 
@@ -272,10 +218,8 @@ if ($isValidLocation)
 
          $tmp = SQLSelectOne($sqlQuery);
          
-         if ($tmp['LOCATION_ID'] != $locations[$i]['ID'])
+         if ($tmp['POI_ID'] != $locations[$i]['POI_ID'])
          {
-            //Debmes("Device (" . $device['TITLE'] . ") ENTERED location " . $locations[$i]['TITLE']);
-            
             // entered location
             $sqlQuery = "SELECT *
                            FROM gpsactions
@@ -372,12 +316,13 @@ if ($isValidLocation)
          }
       }
    }
+
 }
 
 if ($user['LINKED_OBJECT'] && !$location_found)
    setGlobal($user['LINKED_OBJECT'] . '.seenAt', '');
 
-$sqlQuery = "SELECT *, DATE_FORMAT(ADDED, '%H:%i') as DAT
+$sqlQuery = "SELECT MESSAGE, DATE_FORMAT(ADDED, '%H:%i') as DAT
                FROM shouts
               ORDER BY ADDED DESC
               LIMIT 1";
