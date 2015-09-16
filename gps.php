@@ -30,6 +30,84 @@ subscriberid: Subscriber ID
 
  */
 
+/*
+ 
+А как можно подключить трекер gps103b?
+Вот описание строки, которую выдает трекер:
+0 1 2 3 4 5 6 7 8 9 10 11
+imei:359587017470123,tracker,1010181025,00420777123456,F,092548.000,A,5004.5399,N,01426.7352,E,0.58,;
+
+0=imei 359587017470123
+1=tracker - message, alive packet are send with "tracker" other msg are "help me=|ac alarm|acc alarm|door alarm" in every 3min
+2=1010181025 its looks like date 18.10.2010 10:25
+3=00420777123456 authorised phone number
+4=F - GPS signal indicator F = full | L = low
+5=092548.000 - FIX Time (UTC): hhmmss.ss 09:25:48
+6=A - Data validity, A = Valid, V = Invalid
+7=5004.5399 latitude: ddmm.mmmm - 50 degress 04.5399 minutes
+8=N - N/S Indicator - N= northern, S= southern
+9=01426.7352 - longitude: dddmm.mmmm - 014 degrees, 26.5153 minutes
+10=E - E/W Indicator - W= western, E= eastern
+11=0.58 - Speed over ground, Knots
+
+Message from tracker when ARM mode set and door`s open
+imei:359587017470123,door alarm,1010181112,00420777123456,F,101216.000,A,5004.5502,N,01426.7268,E,0.00,;
+
+Message from tracker when ARM mode set and acc is connected
+imei:359587017470123,acc alarm,1010181112,00420777123456,F,101256.000,A,5004.5485,N,01426.7260,E,0.00,;
+
+Message from tracker when AC lost
+imei:359587017470123,ac alarm,1010181113,00420777123456,F,101321.000,A,5004.5534,N,01426.7273,E,0.00,;
+
+Message from tracker when SOS button is press for 3sec, msg every 3min
+imei:359587017470123,help me,1010181104,00420777123456,F,100411.000,A,5004.5396,N,01426.7280,E,0.00,;
+
+Setting parameters by GPRS:
+1-description
+2-command to send to GPS
+3-acknowledgemnt from GPS
+
+To clear/stop SOS messages
+**,imei:359587017470123,E
+imei:359587017470123,et,1010181049,00420777123456,F,094922.000,A,5004.5335,N,01426.7305,E,0.00,;
+
+
+set ARM
+**,imei:359587017470123,L
+imei:359587017470123,lt,1010181025,00420777123456,F,092548.000,A,5004.5399,N,01426.7352,E,0.00,;
+
+DisARM
+**,imei:359587017470123,M
+imei:359587017470123,mt,1010181029,00420777123456,F,092913.000,A,5004.5392,N,01426.7344,E,0.00,;
+
+Set speed alarm 60km/h
+**,imei:359587017470123,H,060
+imei:359587017470123,ht,1010181032,00420777123456,F,093203.000,A,5004.5378,N,01426.7328,E,0.00,;
+
+Set move alarm
+**,imei:359587017470123,G
+imei:359587017470123,gt,1010181046,00420777123456,F,094657.000,A,5004.5251,N,01426.7298,E,0.00,;
+
+Cut oil,stop engine
+**,imei:359587017470123,J
+imei:359587017470123,jt,1010181051,00420777123456,F,095123.000,A,5004.5234,N,01426.7295,E,0.00,;
+
+Resume engine
+**,imei:359587017470123,K
+imei:359587017470123,kt,1010181052,00420777123456,F,095256.000,A,5004.5635,N,01426.7346,E,0.58,;
+
+multitrack30s
+**,imei:359587017470123,C,30s
+
+multitrack1minute
+**,imei:359587017470123,C,01m
+
+singletrack
+**,imei:359587017470123,B
+
+Передача идет по протоколу TCP.
+*/
+
 // start calculation of execution time
 startMeasure('TOTAL');
 
@@ -57,7 +135,6 @@ $longitude = $_REQUEST['longitude'];
 
 
 $isValidLocation = $gps->IsValidGpsLocation($_REQUEST['latitude'], $_REQUEST['longitude']);
-
 
 if (!$gps->IsNullOrEmptyString($_REQUEST['op']))
 {

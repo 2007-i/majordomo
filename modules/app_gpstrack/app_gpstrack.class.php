@@ -1199,7 +1199,7 @@ EOD;
       $device["SPEED"]          = round($postRequest['speed'], 2);
       $device["BATTERY_LEVEL"]  = $postRequest['battlevel'];
       $device["BATTERY_STATUS"] = (int)$postRequest['charging'];
-      $device["ACCURACY"]       = isset($_REQUEST['accuracy']) ? $_REQUEST['accuracy'] : 0;
+      $device["ACCURACY"]       = isset($postRequest['accuracy']) ? $postRequest['accuracy'] : 0;
       $device["TOKEN"]          = $postRequest['token'];
 
       return $device;
@@ -1275,3 +1275,5 @@ EOD;
       return self::MIN_OLD_NEW_COORD_DISTANCE;
    }
 }
+
+
